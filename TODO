@@ -1,0 +1,5 @@
+- separar os arquivos para teste do sistema e verificação do tempo necessário de anotação
+- criar o fluxo de registro e autenticação com cookies dos usuário
+- ajustar a visualização do layout com os breakpoints para mobile e PC
+- sincronizar as anotações com algum banco de dados de minha preferência
+- criar o cenário de validaçãodas perguntas da etapa 1
