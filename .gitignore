@@ -1,4 +1,6 @@
 node_modules
+.next
 
-src/pdfs/*.pdf
-src/annotations/*.pdf
+*.pdf
+*.pdf
+annotations/*.json

@@ -9,7 +9,7 @@ export async function POST(request) {
   const cut_index = __dirname.indexOf("/.next")
   const srcPath = __dirname.slice(0, cut_index)
   const folderPath = `${srcPath}/annotations`
-  const fileName = `${data.doc_id}.json`
+  const fileName = 'times.json'
   const filePath = `${folderPath}/${fileName}`
 
   //salva o arquivo em disco

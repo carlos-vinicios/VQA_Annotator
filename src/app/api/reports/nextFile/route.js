@@ -3,8 +3,10 @@ import { promises as fs } from 'fs';
  
 export async function GET() {
   //essa rota vai ser utilizada apenas para teste da aplicação
-  const reportsPath = "/home/carlos/Documentos/PUC/vqa_annotator/src/pdfs";
-  const annotationsPath = "/home/carlos/Documentos/PUC/vqa_annotator/src/annotations";
+  const cut_index = __dirname.indexOf("/.next");
+  const srcPath = __dirname.slice(0, cut_index);
+  const reportsPath = `${srcPath}/pdfs`;
+  const annotationsPath = `${srcPath}/annotations`;
   
   const reportsFiles = await fs.readdir(reportsPath);
   const annotationFiles = await fs.readdir(annotationsPath);
