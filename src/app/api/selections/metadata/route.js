@@ -1,24 +1,38 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
+import clientPromise from "@/services/mongodb";
+import { ObjectId } from 'mongodb';
 
 export async function POST(request) {
-  //lendo os metadados enviados
-  const data = await request.json()
-  
-  //escrevendo os metadados no arquivo
-  const folderPath = '/home/carlos/Documentos/PUC/VQA_Annotator/src/annotations'
-  const fileName = `${data.doc_id}.json`
-  const filePath = `${folderPath}/${fileName}`
-
-  //salva o arquivo em disco
-  let status = 200
-  let message = "Arquivo salvo com sucesso"
   try {
-    await fs.writeFile(filePath, JSON.stringify(data))
-  } catch (error) {
-    message = "Erro ao salvar arquivo"
-    status = 501
+    const client = await clientPromise;
+    const db = client.db("DOC_VQA");
+    
+    //lendo os metadados enviados
+    const data = await request.json()
+    
+    //atualiza o status de seleção e insere os metadados
+    const r = await db.collection("reports").updateOne(
+      {_id: new ObjectId(data.file_id)},
+      {$set: {
+        selecting: false,
+        pagesMetadata: data.pagesMetadata,
+        lastUpdate: new Date()
+      }}
+    )
+    
+    //lança um erro caso nenhum arquivo tenha 
+    //sido atualizado
+    if (r.modifiedCount === 0) {
+      throw new Error("O arquivo não foi encontrado.")
+    }
+    
+    return NextResponse.json({
+      message: "Metadados inseridos com sucesso"
+    })
+  } catch (e) {
+    return NextResponse.json({
+      message: "Erro ao atualizar o arquivo: " + e.message, 
+      status: 501
+    })
   }
-
-  return NextResponse.json({message, status})  
 }

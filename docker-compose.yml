@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+
+  mongo-db:
+    image: mongo
+    container_name: mongodb
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=$MONGODB_USER
+      - MONGO_INITDB_ROOT_PASSWORD=$MONGODB_PASS
+    # volumes:
+    #   - ./mongo:/docker-entrypoint-initdb.d
+    #   - ./mongo/data:/tmp/data
+    ports:
+      - 27017:27017
+    deploy:
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+        - node.role == manager

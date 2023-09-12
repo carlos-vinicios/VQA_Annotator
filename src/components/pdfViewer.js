@@ -85,6 +85,11 @@ export default function PdfViewer({ filePath, onChangePage, pagesMetadata, sendM
       return 320
   }
 
+  function finishSelection() {
+    onChangePage(pageNumber, {text, image, form, table});
+    sendMetadata();
+  }
+  
   return (
     <Box>
       <Box sx={{minHeight: {xs: "65vh", sm: "80vh", lg: "85vh"}}}>
@@ -146,8 +151,10 @@ export default function PdfViewer({ filePath, onChangePage, pagesMetadata, sendM
           <Button
             sx={{mt: 2, mb: 2, display: (pageNumber === numPages ? 'flex-block' : 'none')}}
             variant="contained"
-            onClick={sendMetadata}
-          >Concluir</Button>
+            onClick={finishSelection}
+          >
+            Concluir
+          </Button>
         </Box>
       </Box>
     </Box>
