@@ -12,6 +12,10 @@ const apiServices = {
     savePageMetadatas: async (metadatas) => {
         const { data } = await axios.post(`/api/selections/metadata`, metadatas);
         return data;
+    },
+    annotationTime: async (times) => {
+        const { data } = await axios.post(`/api/annotations/time`, times);
+        return data;
     }
 }
 

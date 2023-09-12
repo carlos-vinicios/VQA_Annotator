@@ -14,13 +14,21 @@ export default function Annotation() {
   const [finishAnnotation, setFinishAnnotation] = useState(false);
   const [reportFile, setReportFile] = useState({});
 
+  //apenas para o experimento de tempo
+  const [fileTime, setFileTime] = useState({});
+  const [times, setTimes] = useState([]);
+
   useEffect(() => {
     if(Object.keys(reportFile).length === 0){
       apiServices.getNextFile().then(data => {
         if(data.file.length > 0){
           setReportFile(data);
+          setFileTime({filename: data.file, start: new Date(), end: null});
         }else{
           setFinishAnnotation(true);
+          apiServices.annotationTime(times).then(data => {
+            console.log(data)
+          });
         }
       })
     }
@@ -55,11 +63,15 @@ export default function Annotation() {
         doc_id: reportFile.file,
         questions,
       }
-      apiServices.saveAnnotations(dataObj).then(data => {
+      apiServices.saveAnnotations(dataObj).then(() => {
         alert('Anotaçães salvas com sucesso')
       })
     }
+    var fullTime = {...fileTime, end: new Date()}
+    setTimes(prev => [...prev, fullTime]);
+
     //resetando o estado
+    setFileTime({})
     setQuestion('');
     setAnswer('');
     setReportFile({});
@@ -158,7 +170,7 @@ export default function Annotation() {
         </Grid>  
         <Grid item xs={12} sm={4} lg={5} alignItems="center">
           <Button 
-            disabled={questions.length < 5}
+            disabled={questions.length < 1}
             variant="contained" fullWidth
             onClick={saveAnnotations}
           >
