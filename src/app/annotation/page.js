@@ -6,7 +6,7 @@ import QuestionList from '@/components/questionsList';
 import apiServices from '@/services/apiServices';
 import FinishModal from '@/components/finishModal';
 
-export default function Home() {
+export default function Annotation() {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [questions, setQuestions] = useState([]);
