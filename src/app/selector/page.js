@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { Grid, Box, Paper } from '@mui/material';
+import { Grid, Box, Paper, Alert } from '@mui/material';
 import apiServices from '@/services/apiServices';
 import PdfViewer from '@/components/pdfViewer';
 
 export default function Selector() {
   const [reportFile, setReportFile] = useState({});
   const [pagesMetadata, setPagesMetadata] = useState([]);
-  const [finishSelection, setFinishSelection] = useState(false);
 
   useEffect(() => {
     if(Object.keys(reportFile).length === 0){
@@ -29,6 +28,16 @@ export default function Selector() {
     }else{
       setPagesMetadata(prev => [...prev, pageMetadata]);
     }
+  }
+
+  const sendPageMetadata = () => {
+    apiServices.sendPageMetadata({
+      user_id: '12345', //para teste deixa um default
+      doc_id: reportFile.file,
+      metadatas: pagesMetadata
+    }).then(data => {
+      Alert("Dados enviados")
+    });
   }
 
   return (
@@ -56,6 +65,7 @@ export default function Selector() {
                     filePath={`http://192.168.0.40:3000/api/reports/${reportFile.file}`}
                     onChangePage={pageChanged}
                     pagesMetadata={pagesMetadata}
+                    sendMetadata={sendPageMetadata}
                   />
                 )}
               </Grid>

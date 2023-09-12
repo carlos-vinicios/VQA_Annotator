@@ -6,9 +6,7 @@ export async function POST(request) {
   const data = await request.json()
   
   //escrevendo os metadados no arquivo
-  const cut_index = __dirname.indexOf("/.next")
-  const srcPath = __dirname.slice(0, cut_index)
-  const folderPath = `${srcPath}/annotations`
+  const folderPath = '/home/carlos/Documentos/PUC/VQA_Annotator/src/annotations'
   const fileName = `${data.doc_id}.json`
   const filePath = `${folderPath}/${fileName}`
 

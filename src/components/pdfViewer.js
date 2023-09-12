@@ -13,7 +13,7 @@ import { Box, FormControlLabel, Checkbox, IconButton, Typography, Button } from 
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 
 
-export default function PdfViewer({ filePath, onChangePage, pagesMetadata}){
+export default function PdfViewer({ filePath, onChangePage, pagesMetadata, sendMetadata}){
   const theme = useTheme();
   const mobileMatches = useMediaQuery(theme.breakpoints.up('xs'));
   const tabletMatches = useMediaQuery(theme.breakpoints.up('sm'));
@@ -146,6 +146,7 @@ export default function PdfViewer({ filePath, onChangePage, pagesMetadata}){
           <Button
             sx={{mt: 2, mb: 2, display: (pageNumber === numPages ? 'flex-block' : 'none')}}
             variant="contained"
+            onClick={sendMetadata}
           >Concluir</Button>
         </Box>
       </Box>
