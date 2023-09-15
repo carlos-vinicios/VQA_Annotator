@@ -19,6 +19,5 @@ export async function GET() {
       break
     }
   }
-  
   return NextResponse.json({file})
 }

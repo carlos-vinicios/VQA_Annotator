@@ -26,14 +26,16 @@ export default function Home() {
           setFileTime({filename: data.file, start: new Date(), end: null});
         }else{
           setFinishAnnotation(true);
-          apiServices.annotationTime(times).then(data => {
-            console.log(data)
-          });
+          apiServices.annotationTime(times)
         }
       })
     }
   }, [reportFile])
 
+  useEffect(() => {
+    apiServices.annotationTime(times);
+  }, [times])
+  
   const addQuestionAnwser = () => {
     if(question.length > 0 && answer.length > 0) {
       if(questions.filter((qa, _) => qa.question === question).length > 0) {
@@ -65,16 +67,16 @@ export default function Home() {
       }
       apiServices.saveAnnotations(dataObj).then(() => {
         alert('Anotaçães salvas com sucesso')
+        setReportFile({});
       })
     }
     var fullTime = {...fileTime, end: new Date()}
     setTimes(prev => [...prev, fullTime]);
-
+    
     //resetando o estado
     setFileTime({})
     setQuestion('');
     setAnswer('');
-    setReportFile({});
     setQuestions([]);
   }
 
