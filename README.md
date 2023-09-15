@@ -5,7 +5,7 @@ Uma proposta de ferramenta de anotação de documentos para a tarefa de Visual Q
 
 ## Execução local
 
-Primeiro é necessário criar duas pastas (pdfs e annotations) no diretório src, encontrado na raiz do projeto. O diretório pdfs fica responsável por prover os documentos que serão exibidos no anotador. O diretório annotations fica responsável por armazenar as anotações realizadas.
+Primeiro é necessário criar duas pastas (pdfs e annotations) na raiz do projeto. O diretório pdfs fica responsável por prover os documentos que serão exibidos no anotador. O diretório annotations fica responsável por armazenar as anotações realizadas. Caso tenha algum outro sistema ocupando a porta 3000, a visualização de PDF não irá ocorrer como esperado, fecha a outra aplicação ou altere a linha 110 do arquivo src/app/annotation/page.js.
 
 ### Preparando o ambiente
 
