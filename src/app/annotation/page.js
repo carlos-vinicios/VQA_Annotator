@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button, Grid, TextField, Box, Typography, Paper } from '@mui/material';
 import QuestionList from '@/components/questionsList';
 import apiServices from '@/services/apiServices';
 import FinishModal from '@/components/finishModal';
+import { redirect } from 'next/navigation';
 
 export default function Annotation() {
+  const { data: session, status } = useSession();
+  
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [questions, setQuestions] = useState([]);
@@ -17,6 +21,12 @@ export default function Annotation() {
   //apenas para o experimento de tempo
   const [fileTime, setFileTime] = useState({});
   const [times, setTimes] = useState([]);
+
+  useEffect(() => {
+    if(status === 'unauthenticated'){
+      redirect("/login")
+    }
+  }, [status])
 
   useEffect(() => {
     if(Object.keys(reportFile).length === 0){
