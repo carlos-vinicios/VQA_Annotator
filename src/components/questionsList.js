@@ -27,7 +27,7 @@ export default function QuestionList({questions, deleteQuestionAnwser}) {
           <ListItemText
             key={index}
             primary={qa.question}
-            secondary={qa.answer}
+            secondary={qa.response}
           />
         </ListItem>
       ))}      

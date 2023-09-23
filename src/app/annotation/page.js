@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button, Grid, TextField, Box, Typography, Paper } from '@mui/material';
 import QuestionList from '@/components/questionsList';
-import apiServices from '@/services/apiServices';
+import annotationServices from '@/services/api/annotationServices';
 import FinishModal from '@/components/finishModal';
 import { redirect } from 'next/navigation';
 
@@ -12,17 +12,17 @@ export default function Annotation() {
   const { data: session, status } = useSession();
   
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
+  const [response, setResponse] = useState('');
   const [questions, setQuestions] = useState([]);
 
   const [finishAnnotation, setFinishAnnotation] = useState(false);
   const [reportFile, setReportFile] = useState({});
 
-  //apenas para o experimento de tempo
-  const [fileTime, setFileTime] = useState({});
-  const [times, setTimes] = useState([]);
+  //calculo de tempo
+  const [startTime, setStartTime] = useState();
 
   useEffect(() => {
+    //caso não esteja logado, volta para autenticação
     if(status === 'unauthenticated'){
       redirect("/login")
     }
@@ -30,22 +30,19 @@ export default function Annotation() {
 
   useEffect(() => {
     if(Object.keys(reportFile).length === 0){
-      apiServices.getNextFile().then(data => {
-        if(data.file.length > 0){
-          setReportFile(data);
-          setFileTime({filename: data.file, start: new Date(), end: null});
+      annotationServices.getNextFile().then(data => {
+        if(data.page){
+          setReportFile(data.page);
+          setStartTime(new Date());
         }else{
           setFinishAnnotation(true);
-          apiServices.annotationTime(times).then(data => {
-            console.log(data)
-          });
         }
       })
     }
   }, [reportFile])
 
   const addQuestionAnwser = () => {
-    if(question.length > 0 && answer.length > 0) {
+    if(question.length > 0 && response.length > 0) {
       if(questions.filter((qa, _) => qa.question === question).length > 0) {
         alert('Essa pergunta já foi adicionada')
         return
@@ -53,10 +50,10 @@ export default function Annotation() {
       
       setQuestions(prev => [...prev, {
         question,
-        answer,
+        response,
       }])
       setQuestion('');
-      setAnswer('');
+      setResponse('');
     }
   }
 
@@ -68,22 +65,23 @@ export default function Annotation() {
 
   const saveAnnotations = () => {
     if(questions.length > 0) {
+      let elapsedTime = new Date() - startTime 
       const dataObj = {
-        user_id: '12345', //para teste deixa um default
-        doc_id: reportFile.file,
+        annotator: session.user.email,
+        pageId: reportFile.id,
         questions,
+        elapsedTime
       }
-      apiServices.saveAnnotations(dataObj).then(() => {
+      
+      annotationServices.saveAnnotations(dataObj).then(() => {
         alert('Anotaçães salvas com sucesso')
       })
     }
-    var fullTime = {...fileTime, end: new Date()}
-    setTimes(prev => [...prev, fullTime]);
 
     //resetando o estado
-    setFileTime({})
+    setStartTime(null)
     setQuestion('');
-    setAnswer('');
+    setResponse('');
     setReportFile({});
     setQuestions([]);
   }
@@ -115,7 +113,7 @@ export default function Annotation() {
                       width: '100%',
                       height: '90vh',
                     }}
-                    src={`http://192.168.0.40:3000/api/reports/${reportFile.file}`}
+                    src={`http://192.168.0.40:3000/api/reports/page/${reportFile.filename}`}
                     //src="https://docs.google.com/viewerng/viewer?embedded=true&url=http://www.inf.puc-rio.br/wordpress/wp-content/uploads/2022/12/Regulamento-PG-DI-2022-12-06.pdf"
                   />
                 )}
@@ -143,17 +141,17 @@ export default function Annotation() {
               </Grid>
               <Grid item xs={12} sm={12} lg={12}>
                 <TextField 
-                  id="answer" 
+                  id="response" 
                   multiline fullWidth 
                   variant="outlined"
                   label="Sua resposta..."
-                  value={answer}
-                  onChange={e => setAnswer(e.target.value)} 
+                  value={response}
+                  onChange={e => setResponse(e.target.value)} 
                 />
               </Grid>
               <Grid item xs={12} sm={4} lg={5}>
                 <Button
-                  disabled={question.length === 0 || answer.length === 0}
+                  disabled={question.length === 0 || response.length === 0}
                   variant="contained" fullWidth
                   onClick={addQuestionAnwser}
                 >

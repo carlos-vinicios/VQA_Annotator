@@ -1,27 +1,41 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function POST(request) {
   //lendo os metadados enviados
-  const data = await request.json()
-  
-  //escrevendo os metadados no arquivo
-  const cut_index = __dirname.indexOf("/.next")
-  const srcPath = __dirname.slice(0, cut_index)
-  const folderPath = `${srcPath}/annotations`
-  const fileName = `${data.doc_id}.json`
-  const filePath = `${folderPath}/${fileName}`
+  try{
+    const data = await request.json()
+    
+    const user = await prisma.user.findUnique({
+      where: {
+        email: data.annotator
+      }
+    });
 
-  //salva o arquivo em disco
-  let status = 200
-  let message = "Arquivo salvo com sucesso"
-  try {
-    await fs.writeFile(filePath, JSON.stringify(data))
-  } catch (error) {
-    console.log(error)
-    message = "Erro ao salvar arquivo"
-    status = 501
+    let newPageData = {...data}
+    delete newPageData.pageId
+    delete newPageData.annotator
+    newPageData["annotatorId"] = user.id
+    
+    const r = await prisma.page.update({
+      where: {
+        id: data.pageId
+      },
+      data: newPageData
+    })
+    
+    //lança um erro caso nenhum arquivo tenha sido atualizado
+    if (r.modifiedCount === 0) {
+      throw new Error("O arquivo não foi encontrado.")
+    }
+
+    return new NextResponse("Anotações inseridas com sucesso")
+  } catch (e) {
+    return new NextResponse(
+      "Erro ao atualizar o arquivo: " + e, 
+      {status: 400}
+    )
   }
-
-  return NextResponse.json({message, status})  
 }

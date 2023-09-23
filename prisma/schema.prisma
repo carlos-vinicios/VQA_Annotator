@@ -62,8 +62,10 @@ model Report {
 }
 
 type Question {
-  question      String
-  response      String
+  question           String
+  response           String
+  validationResponse String?
+  validationScore    Int?
 }
 
 model Page {
@@ -74,4 +76,6 @@ model Page {
   page          Int
   questions     Question[]
   marking       Boolean   @default(false)
+  annotatorId   String?    @db.ObjectId
+  elapsedTime   Int?
 }
