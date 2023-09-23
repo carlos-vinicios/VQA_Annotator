@@ -1,5 +1,4 @@
-- criar o fluxo de registro e autenticação com cookies dos usuário
-    - Colocar o Prisma para gerenciar a conexão com o banco de dados
 - pegar as páginas para anotação do banco
 - sincronizar as anotações com algum banco de dados de minha preferência
 - criar o cenário de validaçãodas perguntas da etapa 1
+- adicionar o controle de estágios (anotação ou validação das anotações) para os usuários, com base nas sessões

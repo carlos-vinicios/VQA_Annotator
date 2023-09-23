@@ -1,38 +1,34 @@
 import { NextResponse } from 'next/server';
-import clientPromise from "@/services/mongodb";
-import { ObjectId } from 'mongodb';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function POST(request) {
-  try {
-    const client = await clientPromise;
-    const db = client.db("DOC_VQA");
-    
+  try {  
     //lendo os metadados enviados
     const data = await request.json()
     
     //atualiza o status de seleção e insere os metadados
-    const r = await db.collection("reports").updateOne(
-      {_id: new ObjectId(data.file_id)},
-      {$set: {
+    const r = await prisma.report.update({
+      where: {
+        id: data.file_id
+      },
+      data: {
         selecting: false,
-        pagesMetadata: data.pagesMetadata,
-        lastUpdate: new Date()
-      }}
-    )
-    
-    //lança um erro caso nenhum arquivo tenha 
-    //sido atualizado
+        metadatas: data.metadatas,
+      }
+    })
+
+    //lança um erro caso nenhum arquivo tenha sido atualizado
     if (r.modifiedCount === 0) {
       throw new Error("O arquivo não foi encontrado.")
     }
     
-    return NextResponse.json({
-      message: "Metadados inseridos com sucesso"
-    })
+    return new NextResponse("Metadados inseridos com sucesso")
   } catch (e) {
-    return NextResponse.json({
-      message: "Erro ao atualizar o arquivo: " + e.message, 
-      status: 501
-    })
+    return new NextResponse(
+      "Erro ao atualizar o arquivo: " + e, 
+      {status: 400}
+    )
   }
 }

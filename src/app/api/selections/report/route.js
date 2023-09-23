@@ -1,32 +1,31 @@
 import { NextResponse } from 'next/server';
-import clientPromise from "@/services/mongodb";
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient
 
 export async function GET() {
   try {
-    const client = await clientPromise;
-    const db = client.db("DOC_VQA");
-
     //seleciona um arquivo disponível para seleção de
     //páginas
-    const report = await db
-      .collection("reports")
-      .findOne({
+    const report = await prisma.report.findFirst({
+      where: {
         avaiable: true, 
         selecting: false,
-        pagesMetadata: {$exists: false}
-      });
-    
-    //atualiza o status dele
-    await db.collection("reports").updateOne(
-      {_id: report._id},
-      {$set: {
+        // metadatas: {isEmpty: true}
+      }
+    })
+
+    await prisma.report.update({
+      where: {
+        id: report.id
+      },
+      data: {
         selecting: true,
-        lastUpdate: new Date()
-      }}
-    )
+      }
+    })
     
     return NextResponse.json({report})
   } catch (e) {
-    return NextResponse.json({message: "Erro ao buscar arquivo: " + e, status: 501})
+    return new NextResponse("Erro ao buscar arquivo: " + e, {status: 400})
   }
 }

@@ -8,7 +8,7 @@ import FinishModal from '@/components/finishModal';
 
 export default function Selector() {
   const [reportFile, setReportFile] = useState({});
-  const [pagesMetadata, setPagesMetadata] = useState([]);
+  const [metadatas, setMetadatas] = useState([]);
   const [finishSelection, setFinishSelection] = useState(false);
 
   useEffect(() => {
@@ -25,22 +25,22 @@ export default function Selector() {
 
   const pageChanged = (pageNumber, pageMetadata) => {
     console.log(pageNumber)
-    if(pageNumber < pagesMetadata.length){
-      pagesMetadata[pageNumber-1] = pageMetadata;
-      setPagesMetadata(pagesMetadata);
+    if(pageNumber < metadatas.length){
+      metadatas[pageNumber-1] = pageMetadata;
+      setMetadatas(metadatas);
     }else{
-      setPagesMetadata(prev => [...prev, pageMetadata]);
+      setMetadatas(prev => [...prev, pageMetadata]);
     }
   }
   
   const sendPageMetadata = () => {
     selectorServices.savePageMetadatas({
       file_id: reportFile._id,
-      pagesMetadata
+      metadatas
     }).then(data => {
       alert(data.message)
       setReportFile({});
-      setPagesMetadata([]);
+      setMetadatas([]);
     });
   }
 
@@ -69,7 +69,7 @@ export default function Selector() {
                   <PdfViewer
                     filePath={`http://192.168.0.40:3000/api/reports/document/${reportFile.ticker}/${reportFile.filename}`}
                     onChangePage={pageChanged}
-                    pagesMetadata={pagesMetadata}
+                    pagesMetadata={metadatas}
                     sendMetadata={sendPageMetadata}
                   />
                 )}

@@ -42,6 +42,13 @@ model User {
   sessions      Session[]
 }
 
+type Metadata {
+  text          Boolean
+  image         Boolean
+  form          Boolean
+  table         Boolean
+}
+
 model Report {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   ticker        String
@@ -50,7 +57,13 @@ model Report {
   tipo          String
   selecting     Boolean   @default(false)
   avaiable      Boolean
-  pages         Page[]   
+  metadatas     Metadata[]
+  pages         Page[]
+}
+
+type Question {
+  question      String
+  response      String
 }
 
 model Page {
@@ -59,6 +72,6 @@ model Page {
   report        Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
   filename      String
   page          Int
-  avaiable      Boolean   
+  questions     Question[]
   marking       Boolean   @default(false)
 }
