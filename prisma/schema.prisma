@@ -61,21 +61,31 @@ model Report {
   pages         Page[]
 }
 
-type Question {
-  question           String
-  response           String
-  validationResponse String?
-  validationScore    Int?
+type Validation {
+  response                  String
+  similarity                Int
+  validationElapsedTime     Int
+}
+
+model Question {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  pageId        String    @db.ObjectId
+  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  question      String
+  response      String
+  validation    Validation?
+  validating    Boolean   @default(false)
 }
 
 model Page {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  reportId      String    @db.ObjectId
-  report        Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  filename      String
-  page          Int
-  questions     Question[]
-  marking       Boolean   @default(false)
-  annotatorId   String?    @db.ObjectId
-  elapsedTime   Int?
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  reportId             String    @db.ObjectId
+  report               Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  filename             String
+  page                 Int
+  marking              Boolean   @default(false)
+  marked               Boolean   @default(false)
+  annotatorId          String?   @db.ObjectId
+  markingElapsedTime   Int?
+  questions            Question[]
 }
