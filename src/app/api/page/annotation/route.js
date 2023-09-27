@@ -5,26 +5,24 @@ const prisma = new PrismaClient
 
 export async function GET() {
   try {
-    //seleciona um arquivo disponível para seleção de
-    //páginas
-    const report = await prisma.report.findFirst({
+    //seleciona um arquivo disponível para marcação de questões
+    const page = await prisma.page.findFirst({
       where: {
-        avaiable: true, 
-        selecting: false,
-        // metadatas: {isEmpty: true}
+        marking: false,
+        // marked: false
       }
     })
 
-    await prisma.report.update({
+    await prisma.page.update({
       where: {
-        id: report.id
+        id: page.id
       },
       data: {
-        selecting: true,
+        marking: true,
       }
     })
     
-    return NextResponse.json({report})
+    return NextResponse.json({page})
   } catch (e) {
     return new NextResponse("Erro ao buscar arquivo: " + e, {status: 400})
   }

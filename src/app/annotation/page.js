@@ -75,15 +75,14 @@ export default function Annotation() {
       
       annotationServices.saveAnnotations(dataObj).then(() => {
         alert('Anotaçães salvas com sucesso')
+        //resetando o estado
+        setReportFile({});
+        setStartTime(null)
+        setQuestion('');
+        setResponse('');
+        setQuestions([]);
       })
     }
-
-    //resetando o estado
-    setStartTime(null)
-    setQuestion('');
-    setResponse('');
-    setReportFile({});
-    setQuestions([]);
   }
 
   return (

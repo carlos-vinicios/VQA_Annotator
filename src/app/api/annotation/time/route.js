@@ -8,22 +8,13 @@ export async function POST(request) {
   try{
     const data = await request.json()
     
-    const user = await prisma.user.findUnique({
-      where: {
-        email: data.annotator
-      }
-    });
-
-    let newPageData = {...data}
-    delete newPageData.pageId
-    delete newPageData.annotator
-    newPageData["annotatorId"] = user.id
-    
     const r = await prisma.page.update({
       where: {
         id: data.pageId
       },
-      data: newPageData
+      data: {
+        markingElapsedTime: data.elapsedTime 
+      }
     })
     
     //lança um erro caso nenhum arquivo tenha sido atualizado
@@ -31,7 +22,7 @@ export async function POST(request) {
       throw new Error("O arquivo não foi encontrado.")
     }
 
-    return new NextResponse("Anotações inseridas com sucesso")
+    return new NextResponse("Tempo atualizado com sucesso.")
   } catch (e) {
     return new NextResponse(
       "Erro ao atualizar o arquivo: " + e, 
