@@ -1,6 +1,7 @@
-- criar a página da etapa 2 (validação)
 - replicar o controle de concorrência nas atualizações de registro do mongoDB
 - adicionar o controle de estágios (anotação ou validação das anotações) para os usuários, com base nas sessões
 - verificar a consistência da concorrência de acesso aos documentos para marcação e perguntas para validação
 - melhorar os alertas exibidos em tela
 - revisar os modelos do prisma com os documentos no MongoDB
+- adicionar o controle de quando a página foi para marcação
+- adicionar o controle de quando a questão foi para validação

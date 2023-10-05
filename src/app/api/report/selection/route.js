@@ -16,14 +16,16 @@ export async function GET() {
           },
         });
 
-        await tx.report.update({
-          where: {
-            id: report.id,
-          },
-          data: {
-            selecting: true,
-          },
-        });
+        if(report){
+          await tx.report.update({
+            where: {
+              id: report.id,
+            },
+            data: {
+              selecting: true,
+            },
+          });
+        }
 
         return report;
       },
@@ -31,6 +33,10 @@ export async function GET() {
         retry: 5,
       }
     );
+
+    if(!response){
+      return new NextResponse("Não há arquivos disponíveis para seleção.", {status: 201})
+    }
 
     return NextResponse.json(response);
   } catch (e) {
