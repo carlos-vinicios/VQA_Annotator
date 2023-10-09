@@ -16,25 +16,19 @@ export default function Home() {
 
   //apenas para o experimento de tempo
   const [fileTime, setFileTime] = useState({});
-  const [times, setTimes] = useState([]);
 
   useEffect(() => {
     if(Object.keys(reportFile).length === 0){
       apiServices.getNextFile().then(data => {
         if(data.file.length > 0){
           setReportFile(data);
-          setFileTime({filename: data.file, start: new Date(), end: null});
+          setFileTime({start: new Date(), end: null});
         }else{
           setFinishAnnotation(true);
-          apiServices.annotationTime(times)
         }
       })
     }
   }, [reportFile])
-
-  useEffect(() => {
-    apiServices.annotationTime(times);
-  }, [times])
   
   const addQuestionAnwser = () => {
     if(question.length > 0 && answer.length > 0) {
@@ -60,18 +54,18 @@ export default function Home() {
 
   const saveAnnotations = () => {
     if(questions.length > 0) {
+      var fullTime = {...fileTime, end: new Date()}
       const dataObj = {
         user_id: '12345', //para teste deixa um default
         doc_id: reportFile.file,
         questions,
+        annotationTime: fullTime
       }
       apiServices.saveAnnotations(dataObj).then(() => {
         alert('Anotaçães salvas com sucesso')
         setReportFile({});
       })
     }
-    var fullTime = {...fileTime, end: new Date()}
-    setTimes(prev => [...prev, fullTime]);
     
     //resetando o estado
     setFileTime({})

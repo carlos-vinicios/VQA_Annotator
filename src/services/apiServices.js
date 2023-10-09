@@ -8,10 +8,6 @@ const apiServices = {
     saveAnnotations: async (annotation) => {
         const { data } = await axios.post(`/api/annotations`, annotation);
         return data;
-    },
-    annotationTime: async (times) => {
-        const { data } = await axios.post(`/api/annotations/time`, times);
-        return data;
     }
 }
 
