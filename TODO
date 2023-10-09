@@ -1,5 +1,3 @@
-- criar a página da etapa 2 (validação)
-- replicar o controle de concorrência nas atualizações de registro do mongoDB
 - adicionar o controle de estágios (anotação ou validação das anotações) para os usuários, com base nas sessões
 - verificar a consistência da concorrência de acesso aos documentos para marcação e perguntas para validação
 - melhorar os alertas exibidos em tela

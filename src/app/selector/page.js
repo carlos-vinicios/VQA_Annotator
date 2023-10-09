@@ -14,17 +14,19 @@ export default function Selector() {
   useEffect(() => {
     if(Object.keys(reportFile).length === 0){
       selectorServices.getNextReport().then(data => {
-        if(Object.keys(data.report).length > 0){
-          setReportFile(data.report);
-        }else{
+        if(typeof(data) === 'string'){
+          alert(data);
           setFinishSelection(true);
+          return 
+        }
+        if(Object.keys(data).length > 0){
+          setReportFile(data);
         }
       })
     }
   }, [reportFile])
 
   const pageChanged = (pageNumber, pageMetadata) => {
-    console.log(pageNumber)
     if(pageNumber < metadatas.length){
       metadatas[pageNumber-1] = pageMetadata;
       setMetadatas(metadatas);
@@ -35,10 +37,10 @@ export default function Selector() {
   
   const sendPageMetadata = () => {
     selectorServices.savePageMetadatas({
-      file_id: reportFile._id,
+      file_id: reportFile.id,
       metadatas
     }).then(data => {
-      alert(data.message)
+      alert(data)
       setReportFile({});
       setMetadatas([]);
     });
@@ -67,7 +69,7 @@ export default function Selector() {
               <Grid item xs={12} sm={12} lg={8}>
                 {(Object.keys(reportFile).length > 0) && (
                   <PdfViewer
-                    filePath={`http://192.168.0.40:3000/api/reports/document/${reportFile.ticker}/${reportFile.filename}`}
+                    filePath={`http://192.168.0.40:3000/api/report/${reportFile.ticker}/${reportFile.filename}`}
                     onChangePage={pageChanged}
                     pagesMetadata={metadatas}
                     sendMetadata={sendPageMetadata}

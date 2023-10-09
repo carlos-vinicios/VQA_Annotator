@@ -6,23 +6,34 @@ const prisma = new PrismaClient
 export async function GET() {
   try {
     //seleciona um arquivo disponível para marcação de questões
-    const page = await prisma.page.findFirst({
-      where: {
-        marking: false,
-        // marked: false
-      }
-    })
+    const page = await prisma.$transaction(async (tx) => {
+      const page = await tx.page.findFirst({
+        where: {
+          marking: false,
+          marked: false
+        }
+      })
 
-    await prisma.page.update({
-      where: {
-        id: page.id
-      },
-      data: {
-        marking: true,
+      //marca o arquivo como em marcação, caso encontre algum disponivel
+      if(page){
+        await tx.page.update({
+          where: {
+            id: page.id
+          },
+          data: {
+            marking: true,
+          }
+        })
       }
+
+      return page
     })
     
-    return NextResponse.json({page})
+    if(!page){
+      return new NextResponse("Não há arquivos disponíveis para marcação.", {status: 201})
+    }
+
+    return NextResponse.json(page)
   } catch (e) {
     return new NextResponse("Erro ao buscar arquivo: " + e, {status: 400})
   }
