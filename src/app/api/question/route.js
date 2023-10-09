@@ -16,7 +16,7 @@ export async function POST(request) {
       });
     });
 
-    const r = await prisma.question.createMany({
+    await prisma.question.createMany({
       data: questionsList,
     });
 
