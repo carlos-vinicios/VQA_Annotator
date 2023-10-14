@@ -1,4 +1,4 @@
-- adicionar o controle de estágios (anotação ou validação das anotações) para os usuários, com base nas sessões
-- verificar a consistência da concorrência de acesso aos documentos para marcação e perguntas para validação
 - melhorar os alertas exibidos em tela
 - revisar os modelos do prisma com os documentos no MongoDB
+- proteger as rotas do backend com autenticação
+- verificar a consistência da concorrência de acesso aos documentos para marcação e perguntas para validação
