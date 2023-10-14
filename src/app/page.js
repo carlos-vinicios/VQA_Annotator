@@ -1,25 +1,20 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation'
+import { useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 
 export default function Home() {
   const { data: session, status } = useSession();
-  
-  //aqui será feito o contole do usuário que está anotando
-  useEffect(() => {
-    redirect('/annotation')
-  }, [])
 
   useEffect(() => {
-    if(status === 'unauthenticated'){
-      redirect("/login")
+    //caso o usuário não esteja autenticado, ele será redirecionado para a página de login
+    if (status === "unauthenticated") {
+      redirect("/login");
+    } else {
+      redirect(`/${session.user.stage}`);
     }
-  }, [status])
+  }, [status, session]);
 
-  
-  return (
-    <></>
-  );
+  return <></>;
 }
