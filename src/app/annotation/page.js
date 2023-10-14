@@ -111,6 +111,12 @@ export default function Annotation() {
     setAlertOpen(false);
   };
 
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      addQuestionAnwser();
+    }
+  };
+
   return (
     <Box pl={3} pr={3} mt={3} mb={3}>
       <FinishModal open={finishAnnotation} />
@@ -166,12 +172,13 @@ export default function Annotation() {
               <Grid item xs={12} sm={12} lg={12}>
                 <TextField
                   id="response"
-                  multiline
+                  disabled={question.length === 0}
                   fullWidth
                   variant="outlined"
                   label="Sua resposta..."
                   value={response}
                   onChange={(e) => setResponse(e.target.value)}
+                  onKeyDown={handleKeyPress}
                 />
               </Grid>
               <Grid item xs={12} sm={4} lg={5}>

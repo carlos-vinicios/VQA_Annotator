@@ -38,7 +38,6 @@ export async function GET() {
             validation: null,
           },
         });
-        
 
         //se encontrar a questão, atualiza a validação para true
         //e retorna a mesma
@@ -59,7 +58,7 @@ export async function GET() {
     );
     
     if (!question) {
-      return new NextResponse("Não há questões para validar", {status: 201})
+      return new NextResponse("Não há questões para validar", {status: 200})
     }
 
     //procura a página que a questão pertence
