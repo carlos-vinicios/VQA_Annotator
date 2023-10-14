@@ -10,7 +10,12 @@ import { redirect } from 'next/navigation';
 export default function Validate() {
   const { data: session, status } = useSession();
 
-  
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertInfo, setAlertInfo] = useState({
+    message: "",
+    severity: "success",
+  });
+
   const [question, setQuestion] = useState('');
   const [response, setResponse] = useState('');
   
@@ -55,7 +60,11 @@ export default function Validate() {
       }
       
       validateServices.saveResponse(dataObj).then(() => {
-        alert('Resposta salva com sucesso')
+        setAlertInfo({
+          message: "Resposta salva com sucesso",
+          severity: "success",
+        });
+        setAlertOpen(true);
         //resetando o estado
         setDbQuestionData({});
         setQuestion('');
@@ -65,12 +74,22 @@ export default function Validate() {
     }
   }
 
+  const closeAlert = () => {
+    setAlertOpen(false);
+  };
+
   return (
     <Box
       pl={3} pr={3}
       mt={3} mb={3}
     >
       <FinishModal open={finishValidation} />
+      <FloatAlert
+        open={alertOpen}
+        closeCallback={closeAlert}
+        message={alertInfo.message}
+        severity={alertInfo.severity}
+      />
       <Grid 
         container 
         spacing={4}

@@ -7,9 +7,16 @@ import QuestionList from "@/components/questionsList";
 import annotationServices from "@/services/api/annotationServices";
 import FinishModal from "@/components/finishModal";
 import { redirect } from "next/navigation";
+import FloatAlert from "@/components/floatAlert";
 
 export default function Annotation() {
   const { data: session, status } = useSession();
+
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertInfo, setAlertInfo] = useState({
+    message: "",
+    severity: "success",
+  });
 
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState("");
@@ -32,7 +39,6 @@ export default function Annotation() {
     if (Object.keys(reportFile).length === 0) {
       annotationServices.getNextFile().then((data) => {
         if (typeof data === "string") {
-          alert(data);
           setFinishAnnotation(true);
           return;
         } else {
@@ -46,7 +52,11 @@ export default function Annotation() {
   const addQuestionAnwser = () => {
     if (question.length > 0 && response.length > 0) {
       if (questions.filter((qa, _) => qa.question === question).length > 0) {
-        alert("Essa pergunta já foi adicionada");
+        setAlertInfo({
+          message: "Essa pergunta já foi adicionada",
+          severity: "warning",
+        });
+        setAlertOpen(true);
         return;
       }
 
@@ -81,7 +91,11 @@ export default function Annotation() {
 
       annotationServices.saveAnnotations(questionObj).then(() => {
         annotationServices.saveTime(timeObj).then(() => {
-          alert("Anotaçães salvas com sucesso");
+          setAlertInfo({
+            message: "Anotaçães salvas com sucesso",
+            severity: "success",
+          });
+          setAlertOpen(true);
           //resetando o estado
           setReportFile({});
           setStartTime(null);
@@ -93,9 +107,19 @@ export default function Annotation() {
     }
   };
 
+  const closeAlert = () => {
+    setAlertOpen(false);
+  };
+
   return (
     <Box pl={3} pr={3} mt={3} mb={3}>
       <FinishModal open={finishAnnotation} />
+      <FloatAlert
+        open={alertOpen}
+        closeCallback={closeAlert}
+        message={alertInfo.message}
+        severity={alertInfo.severity}
+      />
       <Grid container spacing={4} alignItems="center" justifyContent="center">
         <Grid item sm={12} lg={8}>
           <Paper elevation={2} sx={{ paddingBottom: 3 }}>
