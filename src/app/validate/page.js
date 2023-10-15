@@ -31,8 +31,12 @@ export default function Validate() {
 
   useEffect(() => {
     //caso não esteja logado, volta para autenticação
-    if (status === "unauthenticated") {
-      redirect("/login");
+    if(status === 'unauthenticated'){
+      redirect("/login")
+    }else{ //verifica se o usuário está no estágio correto
+      if (session.user.stage !== 'validate'){
+        redirect(`/${session.user.stage}`);
+      }
     }
   }, [status]);
 

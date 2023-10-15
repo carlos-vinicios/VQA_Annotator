@@ -30,7 +30,7 @@ export default function Login() {
       redirect: false,
     });
     if(!res.error){
-      router.push("/annotation");
+      router.push("/");
     }else{
       setLoginError(true)
     }
