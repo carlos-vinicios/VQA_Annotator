@@ -40,7 +40,7 @@ export default function PdfViewer({
   const [table, setTable] = useState(false);
 
   useEffect(() => {
-    if (pageNumber < pagesMetadata.length) {
+    if (pageNumber <= pagesMetadata.length) {
       const pageMetadata = pagesMetadata[pageNumber - 1];
       setText(pageMetadata.text);
       setImage(pageMetadata.image);
@@ -50,7 +50,6 @@ export default function PdfViewer({
   }, [pageNumber]);
 
   const keyDownEvent = (event) => {
-    console.log(event.code)
     if (event.code === "ArrowRight") {
       nextPage();
     }
@@ -116,10 +115,9 @@ export default function PdfViewer({
   }
 
   function finishSelection() {
-    onChangePage(pageNumber, { text, image, form, table });
-    sendMetadata();
+    sendMetadata({ text, image, form, table });
   }
-
+  
   return (
     <div tabIndex={0} onKeyDown={keyDownEvent} style={{outline: "none"}}>
       <Box sx={{ minHeight: { xs: "65vh", sm: "80vh", lg: "85vh" } }}>

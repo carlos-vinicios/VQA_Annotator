@@ -27,7 +27,7 @@ export default function Selector() {
   }, [reportFile]);
 
   const pageChanged = (pageNumber, pageMetadata) => {
-    if (pageNumber < metadatas.length) {
+    if (pageNumber <= metadatas.length) {
       metadatas[pageNumber - 1] = pageMetadata;
       setMetadatas(metadatas);
     } else {
@@ -35,11 +35,12 @@ export default function Selector() {
     }
   };
 
-  const sendPageMetadata = () => {
+  const sendPageMetadata = (pageMetadata) => {
+    console.log("Metadados enviados", [...metadatas, pageMetadata])
     selectorServices
       .savePageMetadatas({
         file_id: reportFile.id,
-        metadatas,
+        metadatas: [...metadatas, pageMetadata],
       })
       .then((data) => {
         alert(data);
@@ -47,7 +48,7 @@ export default function Selector() {
         setMetadatas([]);
       });
   };
-
+  
   return (
     <Box pl={3} pr={3} mt={3} mb={3}>
       <FinishModal open={finishSelection} />
