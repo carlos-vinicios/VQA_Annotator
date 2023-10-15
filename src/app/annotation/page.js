@@ -1,15 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Button, Grid, TextField, Box, Typography, Paper } from "@mui/material";
 import QuestionList from "@/components/questionsList";
 import annotationServices from "@/services/api/annotationServices";
 import FinishModal from "@/components/finishModal";
 import { redirect } from "next/navigation";
+import FloatAlert from "@/components/floatAlert";
+import LoadBackdrop from "@/components/loadBackdrop";
 
 export default function Annotation() {
   const { data: session, status } = useSession();
+  const questionInputRef = useRef();
+
+  const [loadBackdropOpen, setLoadBackdropOpen] = useState(true);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertInfo, setAlertInfo] = useState({
+    message: "",
+    severity: "success",
+  });
 
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState("");
@@ -34,15 +44,16 @@ export default function Annotation() {
 
   useEffect(() => {
     if (Object.keys(reportFile).length === 0) {
+      setLoadBackdropOpen(true);
       annotationServices.getNextFile().then((data) => {
         if (typeof data === "string") {
-          alert(data);
           setFinishAnnotation(true);
           return;
         } else {
           setReportFile(data);
           setStartTime(new Date());
         }
+        setLoadBackdropOpen(false);
       });
     }
   }, [reportFile]);
@@ -50,7 +61,11 @@ export default function Annotation() {
   const addQuestionAnwser = () => {
     if (question.length > 0 && response.length > 0) {
       if (questions.filter((qa, _) => qa.question === question).length > 0) {
-        alert("Essa pergunta já foi adicionada");
+        setAlertInfo({
+          message: "Essa pergunta já foi adicionada",
+          severity: "warning",
+        });
+        setAlertOpen(true);
         return;
       }
 
@@ -63,6 +78,7 @@ export default function Annotation() {
       ]);
       setQuestion("");
       setResponse("");
+      questionInputRef.current.focus();
     }
   };
 
@@ -85,7 +101,11 @@ export default function Annotation() {
 
       annotationServices.saveAnnotations(questionObj).then(() => {
         annotationServices.saveTime(timeObj).then(() => {
-          alert("Anotaçães salvas com sucesso");
+          setAlertInfo({
+            message: "Anotaçães salvas com sucesso",
+            severity: "success",
+          });
+          setAlertOpen(true);
           //resetando o estado
           setReportFile({});
           setStartTime(null);
@@ -97,9 +117,34 @@ export default function Annotation() {
     }
   };
 
+  const closeAlert = () => {
+    setAlertOpen(false);
+  };
+
+  const closeLoadBackdrop = () => {
+    setLoadBackdropOpen(false);
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      addQuestionAnwser();
+    }
+  };
+
   return (
     <Box pl={3} pr={3} mt={3} mb={3}>
       <FinishModal open={finishAnnotation} />
+      <FloatAlert
+        open={alertOpen}
+        closeCallback={closeAlert}
+        message={alertInfo.message}
+        severity={alertInfo.severity}
+      />
+      <LoadBackdrop
+        open={loadBackdropOpen}
+        handleClose={closeLoadBackdrop}
+        message="Carregando Arquivo"
+      />
       <Grid container spacing={4} alignItems="center" justifyContent="center">
         <Grid item sm={12} lg={8}>
           <Paper elevation={2} sx={{ paddingBottom: 3 }}>
@@ -118,8 +163,7 @@ export default function Annotation() {
                       width: "100%",
                       height: "90vh",
                     }}
-                    src={`http://192.168.0.40:3000/api/page/${reportFile.filename}`}
-                    //src="https://docs.google.com/viewerng/viewer?embedded=true&url=http://www.inf.puc-rio.br/wordpress/wp-content/uploads/2022/12/Regulamento-PG-DI-2022-12-06.pdf"
+                    src={`${process.env.NEXT_PUBLIC_PAGE_ENDPOINT}/${reportFile.filename}`}
                   />
                 )}
                 {Object.keys(reportFile).length === 0 && (
@@ -136,22 +180,25 @@ export default function Annotation() {
               <Grid item xs={12} sm={12} lg={12}>
                 <TextField
                   id="question"
+                  inputRef={questionInputRef}
                   fullWidth
                   variant="outlined"
                   label="Sua pergunta..."
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
+                  autoFocus
                 />
               </Grid>
               <Grid item xs={12} sm={12} lg={12}>
                 <TextField
                   id="response"
-                  multiline
+                  disabled={question.length === 0}
                   fullWidth
                   variant="outlined"
                   label="Sua resposta..."
                   value={response}
                   onChange={(e) => setResponse(e.target.value)}
+                  onKeyDown={handleKeyPress}
                 />
               </Grid>
               <Grid item xs={12} sm={4} lg={5}>
