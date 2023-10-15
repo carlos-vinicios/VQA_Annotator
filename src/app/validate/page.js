@@ -8,10 +8,12 @@ import FinishModal from "@/components/finishModal";
 import FloatAlert from "@/components/floatAlert";
 
 import { redirect } from "next/navigation";
+import LoadBackdrop from "@/components/loadBackdrop";
 
 export default function Validate() {
   const { data: session, status } = useSession();
 
+  const [loadBackdropOpen, setLoadBackdropOpen] = useState(true);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertInfo, setAlertInfo] = useState({
     message: "",
@@ -80,6 +82,10 @@ export default function Validate() {
     setAlertOpen(false);
   };
 
+  const closeLoadBackdrop = () => {
+    setLoadBackdropOpen(false);
+  };
+
   const handleKeyPress = (event) => {
     if (event.key === "Enter") {
       saveResponse();
@@ -94,6 +100,11 @@ export default function Validate() {
         closeCallback={closeAlert}
         message={alertInfo.message}
         severity={alertInfo.severity}
+      />
+      <LoadBackdrop
+        open={loadBackdropOpen}
+        handleClose={closeLoadBackdrop}
+        message="Carregando Arquivo"
       />
       <Grid container spacing={4} alignItems="center" justifyContent="center">
         <Grid item sm={12} lg={8}>
@@ -113,8 +124,7 @@ export default function Validate() {
                       width: "100%",
                       height: "90vh",
                     }}
-                    src={`http://192.168.0.40:3000/api/page/${dbQuestionData.pageFilename}`}
-                    //src="https://docs.google.com/viewerng/viewer?embedded=true&url=http://www.inf.puc-rio.br/wordpress/wp-content/uploads/2022/12/Regulamento-PG-DI-2022-12-06.pdf"
+                    src={`${process.env.NEXT_PUBLIC_PAGE_ENDPOINT}/${dbQuestionData.pageFilename}`}
                   />
                 )}
                 {Object.keys(dbQuestionData).length === 0 && (
@@ -148,6 +158,7 @@ export default function Validate() {
                   value={response}
                   onChange={(e) => setResponse(e.target.value)}
                   onKeyDown={handleKeyPress}
+                  autoFocus
                 />
               </Grid>
               <Grid item xs={12} sm={4} lg={5}>
