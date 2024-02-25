@@ -58,6 +58,7 @@ model Report {
   tipo          String
   selecting     Boolean   @default(false)
   avaiable      Boolean
+  priority      Boolean
   metadatas     Metadata[]
   pages         Page[]
 }

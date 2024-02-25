@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from "@/services/database/prisma";
 
 export async function POST(request) {
   try {  
     //lendo os metadados enviados
     const data = await request.json()
-    console.log(data.metadatas.length)
+    
     //atualiza o status de seleção e insere os metadados
     const r = await prisma.report.update({
       where: {
