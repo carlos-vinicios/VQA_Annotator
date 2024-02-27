@@ -9,8 +9,8 @@ import { useState, useRef } from "react";
 import { Document, Page } from "react-pdf";
 import { Box } from "@mui/material";
 
-export default function PdfViewer({ filePath, pageNumber, boundingBoxes }) {
-  const [boxesElements, setBoxesElements] = useState(null);
+export default function PdfViewer({ filePath, pageNumber, QAS }) {
+  const [boxesElements, setBoxesElements] = useState([]);
   const BoxRef = useRef(null);
 
   function pdfViewSize() {
@@ -37,7 +37,7 @@ export default function PdfViewer({ filePath, pageNumber, boundingBoxes }) {
                 opacity: 0.2,
                 width: w,
                 height: h,
-                zIndex: 9999,
+                zIndex: 8,
               }}
             />
           );
@@ -46,7 +46,15 @@ export default function PdfViewer({ filePath, pageNumber, boundingBoxes }) {
   }
 
   function onPageLoadSuccess(props) {
-    createQABoxes(boundingBoxes, props);
+    var boxes = [];
+    QAS.forEach((element) => {
+      element.boxes.forEach((box) => {
+        box.color = element.color;
+        boxes.push(box);
+      });
+    });
+    console.log(boxes);
+    createQABoxes(boxes, props);
   }
 
   return (
