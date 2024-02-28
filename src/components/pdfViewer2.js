@@ -8,13 +8,16 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 import { useState, useRef } from "react";
 import { Document, Page } from "react-pdf";
 import { Box } from "@mui/material";
+import { MapInteractionCSS } from "react-map-interaction";
 
-export default function PdfViewer({ filePath, pageNumber, QAS }) {
+export default function PdfViewer({ filePath, pageNumber, QAS, matchers }) {
+  const { mobileMatches, tabletMatches, computerMatches } = matchers;
   const [boxesElements, setBoxesElements] = useState([]);
   const BoxRef = useRef(null);
 
   function pdfViewSize() {
-    return BoxRef.current ? BoxRef.current.offsetWidth : 0;
+    if (mobileMatches && !tabletMatches && !computerMatches) return 350;
+    return 1550;
   }
 
   function createQABoxes(boxes, pageBox) {
@@ -34,7 +37,6 @@ export default function PdfViewer({ filePath, pageNumber, QAS }) {
                 top: y,
                 left: x,
                 backgroundColor: element.color,
-                opacity: 0.2,
                 width: w,
                 height: h,
                 zIndex: 8,
@@ -53,24 +55,25 @@ export default function PdfViewer({ filePath, pageNumber, QAS }) {
         boxes.push(box);
       });
     });
-    console.log(boxes);
     createQABoxes(boxes, props);
   }
 
   return (
-    <div tabIndex={0} style={{ outline: "none" }}>
-      <Box ref={BoxRef}>
-        <Document file={filePath}>
-          <Page
-            width={pdfViewSize()}
-            pageNumber={pageNumber}
-            renderTextLayer={false}
-            renderAnnotationLayer={false}
-            onLoadSuccess={onPageLoadSuccess}
-          />
-        </Document>
-        {boxesElements}
-      </Box>
-    </div>
+    <Box sx={{maxWidth: pdfViewSize()}}>
+      <MapInteractionCSS>
+        <Box ref={BoxRef}>
+          <Document file={filePath}>
+            <Page
+              width={1550}
+              pageNumber={pageNumber}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
+              onLoadSuccess={onPageLoadSuccess}
+            />
+          </Document>
+          {boxesElements}
+        </Box>
+      </MapInteractionCSS>
+    </Box>
   );
 }

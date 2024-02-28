@@ -16,6 +16,8 @@ import {
 import selectorServices from "@/services/api/selectorServices";
 import PdfViewer from "@/components/pdfViewer2";
 import FinishModal from "@/components/finishModal";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import {
   CheckBoxRounded,
   Delete,
@@ -25,6 +27,11 @@ import {
 import InteractionDialog from "@/components/interactionDialog";
 
 export default function Annotation() {
+  const theme = useTheme();
+  const mobileMatches = useMediaQuery(theme.breakpoints.up("xs"));
+  const tabletMatches = useMediaQuery(theme.breakpoints.up("sm"));
+  const computerMatches = useMediaQuery(theme.breakpoints.up("lg"));
+
   const [reportFile, setReportFile] = useState({});
   const [QAS, setQAS] = useState([]);
   const [expandedAccordion, setExpandedAccordion] = useState(0);
@@ -34,7 +41,15 @@ export default function Annotation() {
     callback: null,
     messages: { title: "", body: "" },
   });
-  const [finishSelection, setFinishSelection] = useState(false);
+  const [finishAnnotation, setFinishAnnotation] = useState(false);
+  const colorPallete = [
+    "rgba(245, 141, 5, 0.3)",
+    "rgba(247, 207, 114, 0.3)",
+    "rgba(51, 110, 131, 0.3)",
+    "rgba(169, 187, 51, 0.3)",
+    "rgba(160, 23, 138, 0.3)",
+    "rgba(5, 245, 237, 0.3)",
+  ];
 
   useEffect(() => {
     if (Object.keys(reportFile).length === 0) {
@@ -48,13 +63,7 @@ export default function Annotation() {
       //       setReportFile(data);
       //     }
       //   });
-      setReportFile({
-        ticker: "BBAS3",
-        filename: "demonstrativo_2016.pdf",
-      });
-      //esse atributo color não vai para o banco
-      //irei montar a paleta no próprio sistema
-      setQAS([
+      let data = [
         {
           boxes: [
             {
@@ -64,7 +73,6 @@ export default function Annotation() {
               h: 0.010957627557218075,
             },
           ],
-          color: "#A3A",
           question: "Aqui vai uma pergunta?",
           answer: "Essa certamente é a resposta",
           validated: false,
@@ -79,13 +87,23 @@ export default function Annotation() {
               h: 0.011120125651359558,
             },
           ],
-          color: "#AB3",
           question: "Aqui vai uma pergunta?",
           answer: "Essa certamente é a resposta",
           validated: false,
           deleted: false,
         },
-      ]);
+      ];
+      setReportFile({
+        ticker: "BBAS3",
+        filename: "demonstrativo_2016.pdf",
+      });
+
+      setQAS(
+        data.map((element, index) => {
+          element.color = colorPallete[index];
+          return element;
+        })
+      );
     }
   }, [reportFile]);
 
@@ -111,6 +129,10 @@ export default function Annotation() {
   //       setMetadatas([]);
   //     });
   // };
+
+  const saveAnnotations = () => {
+    //aqui só vou enviar os dados para a rota de registro de anotação do backend
+  };
 
   const scrollToElement = (index) => {
     const element = document.getElementById(`BB_${index}`);
@@ -198,10 +220,10 @@ export default function Annotation() {
   const handleResetQA = (qaIndex) => {
     //vai ser chamado quando uma questão invalidada for clicada novamente e confirmada o popup
     if (QAS[qaIndex].deleted || QAS[qaIndex].validated) {
-      let prefixTitle = ""
-      if(QAS[qaIndex].deleted) prefixTitle = "Restaurar"
-      else if(QAS[qaIndex].validated) prefixTitle = "Editar"
-      
+      let prefixTitle = "";
+      if (QAS[qaIndex].deleted) prefixTitle = "Restaurar";
+      else if (QAS[qaIndex].validated) prefixTitle = "Editar";
+
       setDialogData({
         open: true,
         qaIndex: qaIndex,
@@ -226,7 +248,11 @@ export default function Annotation() {
       return (
         <Accordion
           key={index}
-          sx={{ padding: 3, marginTop: 3 }}
+          sx={{
+            padding: (mobileMatches || tabletMatches) && !computerMatches ? 1 : 3,
+            marginTop: 3,
+            backgroundColor: colorPallete[index].replace("0.3", "0.15"),
+          }}
           expanded={expandedAccordion === index}
         >
           <AccordionSummary
@@ -236,7 +262,7 @@ export default function Annotation() {
             id={`question-answer-${index}`}
           >
             <Typography>
-              Pergunta {index + 1} {accordionLabel(index, element)}
+              Pergunta e Resposta {index + 1} {accordionLabel(index, element)}
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -248,7 +274,7 @@ export default function Annotation() {
               label="Pergunta"
               value={element.question}
               onChange={(e) => setQuestion(e.target.value)}
-              sx={{ marginBottom: 3 }}
+              sx={{ marginBottom: 3, backgroundColor: "#fafafa" }}
             />
             <TextField
               id={`answer-${index}`}
@@ -257,7 +283,7 @@ export default function Annotation() {
               label="Resposta"
               value={element.answer}
               onChange={(e) => setQuestion(e.target.value)}
-              sx={{ marginBottom: 3 }}
+              sx={{ marginBottom: 3, backgroundColor: "#fafafa" }}
             />
             <Box sx={{ justifyContent: "space-between" }}>
               <IconButton onClick={() => handleDeleteQA(index)}>
@@ -282,9 +308,11 @@ export default function Annotation() {
     });
   };
 
+  const validationChecker = (arr) => arr.every((v) => v.validated === true);
+
   return (
-    <Box pl={3} pr={3} mt={3} mb={3}>
-      <FinishModal open={finishSelection} />
+    <Box pl={3} pr={3} mt={3} mb={3} sx={{ backgroundColor: "#FAFAFA" }}>
+      <FinishModal open={finishAnnotation} />
       <InteractionDialog
         open={dialogData.open}
         index={dialogData.qaIndex}
@@ -308,6 +336,7 @@ export default function Annotation() {
                     filePath={`${process.env.NEXT_PUBLIC_REPORT_ENDPOINT}/${reportFile.ticker}/${reportFile.filename}`}
                     pageNumber={182}
                     QAS={QAS}
+                    matchers={{mobileMatches, tabletMatches, computerMatches}}
                   />
                 )}
               </Grid>
@@ -318,7 +347,7 @@ export default function Annotation() {
       <Box
         elevation={3}
         sx={{
-          backgroundColor: "#FFF",
+          backgroundColor: "#FAFAFA",
           position: "fixed",
           minWidth: "100%",
           height: "50vh",
@@ -331,7 +360,32 @@ export default function Annotation() {
           boxShadow: 3,
         }}
       >
+        <Typography
+          variant={
+            (mobileMatches || tabletMatches) && !computerMatches ? "h5" : "h3"
+          }
+          sx={{ textAlign: "center", mb: 3 }}
+        >
+          Perguntas e Respostas
+        </Typography>
         {generateQAAccordions()}
+        <Grid
+          container
+          sx={{
+            width: "100%",
+            mt: 5,
+          }}
+          justifyContent="flex-end"
+        >
+          <Button
+            variant="contained"
+            color="success"
+            fullWidth={(mobileMatches || tabletMatches) && !computerMatches}
+            disabled={!validationChecker(QAS)}
+          >
+            Salvar
+          </Button>
+        </Grid>
       </Box>
     </Box>
   );
