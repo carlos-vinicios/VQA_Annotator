@@ -143,7 +143,18 @@ export default function Annotation() {
 
   const nextQAAccordion = (qaIndex) => {
     //vai abrir a próxima pergunta que deve ser verificada
-    if (qaIndex < QAS.length) setExpandedAccordion(qaIndex + 1);
+    if (qaIndex < QAS.length){
+      let nextIndex = qaIndex + 1;
+      //vamos buscar pela QA que ainda não foi validada
+      for (let i = 0; i < QAS.length; i++) {
+        const element = QAS[i];
+        if(!element.validated){
+          break
+        }
+        nextIndex += 1        
+      }
+      setExpandedAccordion(nextIndex);
+    }
   };
 
   const confirmQA = (qaIndex) => {
@@ -337,6 +348,7 @@ export default function Annotation() {
                     pageNumber={182}
                     QAS={QAS}
                     matchers={{mobileMatches, tabletMatches, computerMatches}}
+                    focusQA={expandedAccordion}
                   />
                 )}
               </Grid>
