@@ -13,6 +13,7 @@ import { MapInteractionCSS } from "react-map-interaction";
 export default function PdfViewer({
   filePath,
   pageNumber,
+  pageWidth,
   QAS,
   matchers,
   focusQA,
@@ -46,7 +47,7 @@ export default function PdfViewer({
 
   function pdfViewSize() {
     if (mobileMatches && !tabletMatches && !computerMatches) return 350;
-    return 1550;
+    return pageWidth;
   }
 
   function createQABoxes(boxes, pageBox) {
@@ -54,10 +55,12 @@ export default function PdfViewer({
       var localBoxesCoords = [];
       setBoxesElements(
         boxes.map((element, index) => {
-          let w = pageBox.width * element.w;
-          let h = pageBox.height * element.h;
-          let x = pageBox.width * element.x + BoxRef.current.offsetLeft;
-          let y = pageBox.height * element.y + BoxRef.current.offsetTop;
+          console.log(element)
+          // let w = pageBox.width * element.w;
+          // let h = pageBox.height * element.h;
+          // let x = pageBox.width * element.x + BoxRef.current.offsetLeft;
+          // let y = pageBox.height * element.y + BoxRef.current.offsetTop;
+          let {x, y, w, h, color} = element
           localBoxesCoords = [...localBoxesCoords, { x, y, w, h }];
           return (
             <Box
@@ -67,7 +70,7 @@ export default function PdfViewer({
                 position: "absolute",
                 top: y,
                 left: x,
-                backgroundColor: element.color,
+                backgroundColor: color,
                 width: w,
                 height: h,
                 zIndex: 8,
@@ -100,7 +103,7 @@ export default function PdfViewer({
         <Box ref={BoxRef}>
           <Document file={filePath}>
             <Page
-              width={1550}
+              width={pageWidth}
               pageNumber={pageNumber}
               renderTextLayer={false}
               renderAnnotationLayer={false}

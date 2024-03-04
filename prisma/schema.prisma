@@ -60,35 +60,66 @@ model Report {
   avaiable      Boolean
   priority      Boolean
   metadatas     Metadata[]
-  pages         Page[]
+//  pages         Page[]
 }
 
-type Validation {
-  response                  String
-  similarity                Int?
-  validationElapsedTime     Int
+//type Validation {
+//  response                  String
+//  similarity                Int?
+//  validationElapsedTime     Int
+//}
+
+//model Question {
+//  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+//  pageId        String    @db.ObjectId
+//  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+//  question      String
+//  response      String
+//  validation    Validation?
+//  validatorId   String?   @db.ObjectId
+//  validating    Boolean   @default(false)
+//}
+
+type BoundingBox {
+  x      Int
+  y      Int
+  w      Int
+  h      Int
 }
 
-model Question {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  pageId        String    @db.ObjectId
-  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  question      String
-  response      String
-  validation    Validation?
-  validatorId   String?   @db.ObjectId
-  validating    Boolean   @default(false)
+type Usage {
+  completion_tokens   Int
+  prompt_tokens       Int
+  total_tokens        Int
 }
 
-model Page {
+type QAs {
+  model_question      String
+  questions_boxes     BoundingBox[]
+  user_question       String
+  model_answer        String
+  answer_boxes        BoundingBox[]
+  user_answer         String
+  validated           Boolean   @default(false)
+  deleted             Boolean   @default(false)
+}
+
+type PageDimension {
+  width       Int
+  height      Int
+}
+
+model PageTest {
   id                   String    @id @default(auto()) @map("_id") @db.ObjectId
-  reportId             String    @db.ObjectId
-  report               Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
   filename             String
+  ticker               String
   page                 Int
-  marking              Boolean   @default(false)
-  marked               Boolean   @default(false)
-  annotatorId          String?   @db.ObjectId
-  markingElapsedTime   Int?
-  questions            Question[]
+  dimension            PageDimension
+  qas                  QAs[]
+  usages               Usage[]
+  user                 String
+  elapsedTime          Int?
+  annotated            Boolean   @default(false)
+
+  @@map("PageTest")
 }

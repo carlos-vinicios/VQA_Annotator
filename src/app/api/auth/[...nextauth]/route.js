@@ -34,6 +34,7 @@ const handler = NextAuth({
       user &&
         (token.user = {
           email: user.email,
+          token: user.token,
           stage: user.stage,
         });
       return token;

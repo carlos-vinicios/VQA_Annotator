@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   Grid,
   Box,
@@ -13,7 +14,7 @@ import {
   AccordionDetails,
   Typography,
 } from "@mui/material";
-import selectorServices from "@/services/api/selectorServices";
+import annotationServices from "@/services/api/annotationServices";
 import PdfViewer from "@/components/pdfViewer2";
 import FinishModal from "@/components/finishModal";
 import { useTheme } from "@mui/material/styles";
@@ -27,6 +28,8 @@ import {
 import InteractionDialog from "@/components/interactionDialog";
 
 export default function Annotation() {
+  const { data: session, status } = useSession();
+
   const theme = useTheme();
   const mobileMatches = useMediaQuery(theme.breakpoints.up("xs"));
   const tabletMatches = useMediaQuery(theme.breakpoints.up("sm"));
@@ -52,83 +55,88 @@ export default function Annotation() {
   ];
 
   useEffect(() => {
-    if (Object.keys(reportFile).length === 0) {
-      //   selectorServices.getNextReport().then((data) => {
-      //     if (typeof data === "string") {
-      //       alert(data);
-      //       setFinishSelection(true);
-      //       return;
-      //     }
-      //     if (Object.keys(data).length > 0) {
-      //       setReportFile(data);
-      //     }
-      //   });
-      let data = [
-        {
-          boxes: [
-            {
-              x: 0.049475960433483124,
-              y: 0.020495763048529625,
-              w: 0.5529398918151855,
-              h: 0.010957627557218075,
-            },
-          ],
-          question: "Aqui vai uma pergunta?",
-          answer: "Essa certamente é a resposta",
-          validated: false,
-          deleted: false,
-        },
-        {
-          boxes: [
-            {
-              x: 0.1189112663269043,
-              y: 0.34039339423179626,
-              w: 0.8077865242958069,
-              h: 0.011120125651359558,
-            },
-          ],
-          question: "Aqui vai uma pergunta?",
-          answer: "Essa certamente é a resposta",
-          validated: false,
-          deleted: false,
-        },
-      ];
-      setReportFile({
-        ticker: "BBAS3",
-        filename: "demonstrativo_2016.pdf",
+    if (session) {
+      annotationServices.getNextFile(session.user.token).then((data) => {
+        setReportFile({
+          ticker: data.ticker,
+          filename: data.filename,
+          page: data.page,
+          dimension: data.dimension
+        });
+        setQAS(
+          data.qas.map((element, index) => {
+            let newElementValue = {
+              question: element.model_question,
+              answer: element.model_answer,
+              boxes: [...element.questions_boxes, ...element.answer_boxes],
+              color: colorPallete[index],
+              validated: false,
+              deleted: false,
+            };
+            return newElementValue;
+          })
+        );
       });
-
-      setQAS(
-        data.map((element, index) => {
-          element.color = colorPallete[index];
-          return element;
-        })
-      );
     }
-  }, [reportFile]);
+  }, [status]);
 
-  // const pageChanged = (pageNumber, pageMetadata) => {
-  //   if (pageNumber <= metadatas.length) {
-  //     metadatas[pageNumber - 1] = pageMetadata;
-  //     setMetadatas(metadatas);
-  //   } else {
-  //     setMetadatas((prev) => [...prev, pageMetadata]);
-  //   }
-  // };
+  // useEffect(() => {
+  //   if (Object.keys(reportFile).length === 0) {
 
-  // const sendPageMetadata = (pageMetadata) => {
-  //   // console.log("Metadados enviados", [...metadatas, pageMetadata])
-  //   selectorServices
-  //     .savePageMetadatas({
-  //       file_id: reportFile.id,
-  //       metadatas: [...metadatas, pageMetadata],
-  //     })
-  //     .then((data) => {
-  //       alert(data);
-  //       setReportFile({});
-  //       setMetadatas([]);
+  //     //   selectorServices.getNextReport().then((data) => {
+  //     //     if (typeof data === "string") {
+  //     //       alert(data);
+  //     //       setFinishSelection(true);
+  //     //       return;
+  //     //     }
+  //     //     if (Object.keys(data).length > 0) {
+  //     //       setReportFile(data);
+  //     //     }
+  //     //   });
+
+  //     let data = [
+  //       {
+  //         boxes: [
+  //           {
+  //             x: 0.049475960433483124,
+  //             y: 0.020495763048529625,
+  //             w: 0.5529398918151855,
+  //             h: 0.010957627557218075,
+  //           },
+  //         ],
+  //         question: "Aqui vai uma pergunta?",
+  //         answer: "Essa certamente é a resposta",
+  //         validated: false,
+  //         deleted: false,
+  //       },
+  //       {
+  //         boxes: [
+  //           {
+  //             x: 0.1189112663269043,
+  //             y: 0.34039339423179626,
+  //             w: 0.8077865242958069,
+  //             h: 0.011120125651359558,
+  //           },
+  //         ],
+  //         question: "Aqui vai uma pergunta?",
+  //         answer: "Essa certamente é a resposta",
+  //         validated: false,
+  //         deleted: false,
+  //       },
+  //     ];
+  //     setReportFile({
+  //       ticker: "BBAS3",
+  //       filename: "demonstrativo_2016.pdf",
   //     });
-  // };
+
+  //     setQAS(
+  //       data.map((element, index) => {
+  //         element.color = colorPallete[index];
+  //         return element;
+  //       })
+  //     );
+  //   }
+  // }, [reportFile]);
 
   const saveAnnotations = () => {
     //aqui só vou enviar os dados para a rota de registro de anotação do backend
@@ -143,15 +151,15 @@ export default function Annotation() {
 
   const nextQAAccordion = (qaIndex) => {
     //vai abrir a próxima pergunta que deve ser verificada
-    if (qaIndex < QAS.length){
+    if (qaIndex < QAS.length) {
       let nextIndex = qaIndex + 1;
       //vamos buscar pela QA que ainda não foi validada
       for (let i = 0; i < QAS.length; i++) {
         const element = QAS[i];
-        if(!element.validated){
-          break
+        if (!element.validated) {
+          break;
         }
-        nextIndex += 1        
+        nextIndex += 1;
       }
       setExpandedAccordion(nextIndex);
     }
@@ -260,7 +268,8 @@ export default function Annotation() {
         <Accordion
           key={index}
           sx={{
-            padding: (mobileMatches || tabletMatches) && !computerMatches ? 1 : 3,
+            padding:
+              (mobileMatches || tabletMatches) && !computerMatches ? 1 : 3,
             marginTop: 3,
             backgroundColor: colorPallete[index].replace("0.3", "0.15"),
           }}
@@ -345,9 +354,10 @@ export default function Annotation() {
                 {Object.keys(reportFile).length > 0 && (
                   <PdfViewer
                     filePath={`${process.env.NEXT_PUBLIC_REPORT_ENDPOINT}/${reportFile.ticker}/${reportFile.filename}`}
-                    pageNumber={182}
+                    pageNumber={reportFile.page}
+                    pageWidth={reportFile.dimension.width}
                     QAS={QAS}
-                    matchers={{mobileMatches, tabletMatches, computerMatches}}
+                    matchers={{ mobileMatches, tabletMatches, computerMatches }}
                     focusQA={expandedAccordion}
                   />
                 )}

@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const apiServices = {
-    getNextFile: async () => {
-        const { data } = await axios.get(`/api/page/annotation`);
+    getNextFile: async (user) => {
+        const { data } = await axios.get(`/api/annotation/page/${user}`);
         return data;
     },
     saveTime: async (time) => {
