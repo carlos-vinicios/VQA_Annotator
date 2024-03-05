@@ -55,12 +55,10 @@ export default function PdfViewer({
       var localBoxesCoords = [];
       setBoxesElements(
         boxes.map((element, index) => {
-          console.log(element)
-          // let w = pageBox.width * element.w;
-          // let h = pageBox.height * element.h;
-          // let x = pageBox.width * element.x + BoxRef.current.offsetLeft;
-          // let y = pageBox.height * element.y + BoxRef.current.offsetTop;
-          let {x, y, w, h, color} = element
+          let w = pageBox.width * element.w;
+          let h = pageBox.height * element.h;
+          let x = pageBox.width * element.x + BoxRef.current.offsetLeft;
+          let y = pageBox.height * element.y + BoxRef.current.offsetTop;
           localBoxesCoords = [...localBoxesCoords, { x, y, w, h }];
           return (
             <Box
@@ -70,7 +68,7 @@ export default function PdfViewer({
                 position: "absolute",
                 top: y,
                 left: x,
-                backgroundColor: color,
+                backgroundColor: element.color,
                 width: w,
                 height: h,
                 zIndex: 8,

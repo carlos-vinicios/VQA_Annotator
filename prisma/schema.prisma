@@ -81,10 +81,10 @@ model Report {
 //}
 
 type BoundingBox {
-  x      Int
-  y      Int
-  w      Int
-  h      Int
+  x      Float
+  y      Float
+  w      Float
+  h      Float
 }
 
 type Usage {

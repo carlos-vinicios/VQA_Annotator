@@ -12,7 +12,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Typography,
+  Typography
 } from "@mui/material";
 import annotationServices from "@/services/api/annotationServices";
 import PdfViewer from "@/components/pdfViewer2";
@@ -26,6 +26,8 @@ import {
   RemoveRedEye,
 } from "@mui/icons-material";
 import InteractionDialog from "@/components/interactionDialog";
+import LoadBackdrop from "@/components/loadBackdrop";
+import SideMenu from "@/components/sideMenu";
 
 export default function Annotation() {
   const { data: session, status } = useSession();
@@ -37,14 +39,16 @@ export default function Annotation() {
 
   const [reportFile, setReportFile] = useState({});
   const [QAS, setQAS] = useState([]);
-  const [expandedAccordion, setExpandedAccordion] = useState(0);
+  const [expandedAccordion, setExpandedAccordion] = useState(-1);
   const [dialogData, setDialogData] = useState({
     open: false,
     qaIndex: null,
     callback: null,
     messages: { title: "", body: "" },
   });
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [finishAnnotation, setFinishAnnotation] = useState(false);
+  const [strtTime, setStrtTime] = useState(new Date());
   const colorPallete = [
     "rgba(245, 141, 5, 0.3)",
     "rgba(247, 207, 114, 0.3)",
@@ -54,21 +58,25 @@ export default function Annotation() {
     "rgba(5, 245, 237, 0.3)",
   ];
 
-  useEffect(() => {
+  const getNewPageForAnnotation = () => {
     if (session) {
+      setExpandedAccordion(0);
       annotationServices.getNextFile(session.user.token).then((data) => {
-        setReportFile({
-          ticker: data.ticker,
-          filename: data.filename,
-          page: data.page,
-          dimension: data.dimension
-        });
+        if (Object.keys(data).length === 0) {
+          setFinishAnnotation(true);
+          return;
+        }
+        setStrtTime(new Date());
+        setReportFile(data);
         setQAS(
           data.qas.map((element, index) => {
             let newElementValue = {
               question: element.model_question,
               answer: element.model_answer,
-              boxes: [...element.questions_boxes, ...element.answer_boxes],
+              boxes: [
+                ...JSON.parse(JSON.stringify(element.questions_boxes)),
+                ...JSON.parse(JSON.stringify(element.answer_boxes)),
+              ],
               color: colorPallete[index],
               validated: false,
               deleted: false,
@@ -76,70 +84,41 @@ export default function Annotation() {
             return newElementValue;
           })
         );
+        setIsDataLoading(false);
       });
     }
+  };
+
+  useEffect(() => {
+    getNewPageForAnnotation();
   }, [status]);
-
-  // useEffect(() => {
-  //   if (Object.keys(reportFile).length === 0) {
-
-  //     //   selectorServices.getNextReport().then((data) => {
-  //     //     if (typeof data === "string") {
-  //     //       alert(data);
-  //     //       setFinishSelection(true);
-  //     //       return;
-  //     //     }
-  //     //     if (Object.keys(data).length > 0) {
-  //     //       setReportFile(data);
-  //     //     }
-  //     //   });
-
-  //     let data = [
-  //       {
-  //         boxes: [
-  //           {
-  //             x: 0.049475960433483124,
-  //             y: 0.020495763048529625,
-  //             w: 0.5529398918151855,
-  //             h: 0.010957627557218075,
-  //           },
-  //         ],
-  //         question: "Aqui vai uma pergunta?",
-  //         answer: "Essa certamente é a resposta",
-  //         validated: false,
-  //         deleted: false,
-  //       },
-  //       {
-  //         boxes: [
-  //           {
-  //             x: 0.1189112663269043,
-  //             y: 0.34039339423179626,
-  //             w: 0.8077865242958069,
-  //             h: 0.011120125651359558,
-  //           },
-  //         ],
-  //         question: "Aqui vai uma pergunta?",
-  //         answer: "Essa certamente é a resposta",
-  //         validated: false,
-  //         deleted: false,
-  //       },
-  //     ];
-  //     setReportFile({
-  //       ticker: "BBAS3",
-  //       filename: "demonstrativo_2016.pdf",
-  //     });
-
-  //     setQAS(
-  //       data.map((element, index) => {
-  //         element.color = colorPallete[index];
-  //         return element;
-  //       })
-  //     );
-  //   }
-  // }, [reportFile]);
 
   const saveAnnotations = () => {
     //aqui só vou enviar os dados para a rota de registro de anotação do backend
+    setIsDataLoading(true);
+    let newQAs = [];
+    for (let i = 0; i < QAS.length; i++) {
+      const user_element = QAS[i];
+      const model_element = reportFile.qas[i];
+      newQAs.push({
+        ...model_element,
+        user_question: user_element.question,
+        user_answer: user_element.answer,
+        validated: user_element.validated,
+        deleted: user_element.deleted,
+      });
+    }
+
+    annotationServices
+      .saveAnnotations({
+        ...reportFile,
+        elapsedTime: new Date() - strtTime,
+        qas: newQAs,
+        annotated: true,
+      })
+      .then(() => {
+        getNewPageForAnnotation();
+      });
   };
 
   const scrollToElement = (index) => {
@@ -152,9 +131,9 @@ export default function Annotation() {
   const nextQAAccordion = (qaIndex) => {
     //vai abrir a próxima pergunta que deve ser verificada
     if (qaIndex < QAS.length) {
-      let nextIndex = qaIndex + 1;
+      let nextIndex = qaIndex;
       //vamos buscar pela QA que ainda não foi validada
-      for (let i = 0; i < QAS.length; i++) {
+      for (let i = nextIndex; i < QAS.length; i++) {
         const element = QAS[i];
         if (!element.validated) {
           break;
@@ -262,6 +241,17 @@ export default function Annotation() {
     else return " - Validada";
   };
 
+  const updateQA = (qaIndex, atrib, value) => {
+    setQAS(
+      QAS.map((element, index) => {
+        if (qaIndex === index) {
+          element[atrib] = value;
+        }
+        return element;
+      })
+    );
+  };
+
   const generateQAAccordions = () => {
     return QAS.map((element, index) => {
       return (
@@ -289,11 +279,10 @@ export default function Annotation() {
             <TextField
               id={`question-${index}`}
               fullWidth
-              // disabled={true}
               variant="outlined"
               label="Pergunta"
               value={element.question}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={(e) => updateQA(index, "question", e.target.value)}
               sx={{ marginBottom: 3, backgroundColor: "#fafafa" }}
             />
             <TextField
@@ -302,7 +291,7 @@ export default function Annotation() {
               variant="outlined"
               label="Resposta"
               value={element.answer}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={(e) => updateQA(index, "answer", e.target.value)}
               sx={{ marginBottom: 3, backgroundColor: "#fafafa" }}
             />
             <Box sx={{ justifyContent: "space-between" }}>
@@ -331,8 +320,10 @@ export default function Annotation() {
   const validationChecker = (arr) => arr.every((v) => v.validated === true);
 
   return (
-    <Box pl={3} pr={3} mt={3} mb={3} sx={{ backgroundColor: "#FAFAFA" }}>
+    <Box pl={3} pr={3} mt={3} mb={3} >
+      <SideMenu />
       <FinishModal open={finishAnnotation} />
+      <LoadBackdrop open={isDataLoading} message={"Carregando Dados"} />
       <InteractionDialog
         open={dialogData.open}
         index={dialogData.qaIndex}
@@ -378,6 +369,7 @@ export default function Annotation() {
           bottom: 0,
           left: 0,
           padding: 3,
+          pl: 10, //TODO: será se mobile é esse valor?
           zIndex: 9,
           boxShadow: 3,
         }}
@@ -404,6 +396,7 @@ export default function Annotation() {
             color="success"
             fullWidth={(mobileMatches || tabletMatches) && !computerMatches}
             disabled={!validationChecker(QAS)}
+            onClick={saveAnnotations}
           >
             Salvar
           </Button>

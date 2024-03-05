@@ -5,12 +5,8 @@ const apiServices = {
         const { data } = await axios.get(`/api/annotation/page/${user}`);
         return data;
     },
-    saveTime: async (time) => {
-        const { data } = await axios.post(`/api/annotation/time`, time);
-        return data;
-    },
     saveAnnotations: async (annotation) => {
-        const { data } = await axios.post(`/api/question`, annotation);
+        const { data } = await axios.post(`/api/annotation`, annotation);
         return data;
     }
 }

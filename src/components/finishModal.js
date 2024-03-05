@@ -16,8 +16,8 @@ export default function FinishModal({open}) {
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Não temos mais nenhum arquivo para anotar.<br></br>
-            Muito obrigado por sua ajuda.
+            Acabaram todas as páginas para anotação.<br></br>
+            Muito obrigado por sua ajuda ❤️.
           </DialogContentText>
         </DialogContent>
       </Dialog>
