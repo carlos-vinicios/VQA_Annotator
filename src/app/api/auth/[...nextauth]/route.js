@@ -7,6 +7,9 @@ const handler = NextAuth({
   session: {
     strategy: "jwt",
   },
+  pages: {
+    signIn: "/login",
+  },
   secret: process.env.JWT_SECRET,
   adapter: PrismaAdapter(prisma),
   providers: [

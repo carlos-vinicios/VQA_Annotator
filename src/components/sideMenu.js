@@ -1,5 +1,6 @@
 import * as React from "react";
 import { styled, useTheme } from "@mui/material/styles";
+import { signOut } from "next-auth/react";
 import MuiDrawer from "@mui/material/Drawer";
 import MuiAppBar from "@mui/material/AppBar";
 import List from "@mui/material/List";
@@ -12,8 +13,8 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import LogoutIcon from '@mui/icons-material/Logout';
-import EditNoteIcon from '@mui/icons-material/EditNote';
+import LogoutIcon from "@mui/icons-material/Logout";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 
 const drawerWidth = 240;
 
@@ -85,24 +86,41 @@ const Drawer = styled(MuiDrawer, {
 export default function SideMenu() {
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
+
+  const goToAnnotation = () => {
+    //caso tenha mais de um página no futuro, colocar o controle aqui
+    return;
+  };
+
+  const handleSingOut = () => {
+    //remove os cookies de sessão e redireciona para o login
+    signOut({ callbackUrl: "/login", redirect: true });
+  };
+
   const options = [
-    {text: "Anotação", icon: <EditNoteIcon />},
-    {text: "Sair", icon: <LogoutIcon />},
-  ]
+    { text: "Anotação", icon: <EditNoteIcon />, action: goToAnnotation },
+    { text: "Sair", icon: <LogoutIcon />, action: handleSingOut },
+  ];
 
   const handleChangeDrawerState = () => {
     setOpen(!open);
+  };
+
+  const drawerButton = () => {
+    if (theme.direction === "rtl") {
+      if (open) return <ChevronRightIcon />;
+      return <ChevronLeftIcon />;
+    } else {
+      if (open) return <ChevronLeftIcon />;
+      return <ChevronRightIcon />;
+    }
   };
 
   return (
     <Drawer variant="permanent" open={open}>
       <DrawerHeader>
         <IconButton onClick={handleChangeDrawerState}>
-          {theme.direction === "rtl" ? (
-            <ChevronLeftIcon />
-          ) : (
-            <MenuIcon />
-          )}
+          {drawerButton()}
         </IconButton>
       </DrawerHeader>
       <Divider />
@@ -115,6 +133,7 @@ export default function SideMenu() {
                 justifyContent: open ? "initial" : "center",
                 px: 2.5,
               }}
+              onClick={element.action}
             >
               <ListItemIcon
                 sx={{
@@ -125,7 +144,10 @@ export default function SideMenu() {
               >
                 {element.icon}
               </ListItemIcon>
-              <ListItemText primary={element.text} sx={{ opacity: open ? 1 : 0 }} />
+              <ListItemText
+                primary={element.text}
+                sx={{ opacity: open ? 1 : 0 }}
+              />
             </ListItemButton>
           </ListItem>
         ))}
