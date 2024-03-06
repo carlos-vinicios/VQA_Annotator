@@ -124,7 +124,12 @@ export default function Annotation() {
   const scrollToElement = (index) => {
     const element = document.getElementById(`BB_${index}`);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      const elementRect = element.getBoundingClientRect();
+      window.scrollTo({
+        top: elementRect.top,
+        left: 0,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -321,7 +326,7 @@ export default function Annotation() {
 
   return (
     <Box pl={3} pr={3} mt={3} mb={3}>
-      <SideMenu />
+      <SideMenu matchers={{ mobileMatches, tabletMatches, computerMatches }} />
       <FinishModal open={finishAnnotation} />
       <LoadBackdrop open={isDataLoading} message={"Carregando Dados"} />
       <InteractionDialog
@@ -332,7 +337,7 @@ export default function Annotation() {
       />
       <Grid container spacing={4} alignItems="center" justifyContent="center">
         <Grid item sm={12} lg={10}>
-          <Paper elevation={2} sx={{ paddingBottom: 3 }}>
+          <Paper elevation={2} sx={{ paddingBottom: 3, mt: 10 }}>
             <Grid
               container
               spacing={2}
@@ -371,20 +376,20 @@ export default function Annotation() {
           backgroundColor: "#FAFAFA",
           position: "fixed",
           minWidth: "100%",
-          height: "50vh",
+          height: "46vh",
           overflowY: "scroll",
           overflowX: "hidden",
           bottom: 0,
           left: 0,
           padding: 3,
-          pl: 10, //TODO: será se mobile é esse valor?
+          pl: (mobileMatches || tabletMatches) && !computerMatches ? 3 : 10,
           zIndex: 9,
           boxShadow: 3,
         }}
       >
         <Typography
           variant={
-            (mobileMatches || tabletMatches) && !computerMatches ? "h5" : "h3"
+            (mobileMatches || tabletMatches) && !computerMatches ? "h5" : "h4"
           }
           sx={{ textAlign: "center", mb: 3 }}
         >

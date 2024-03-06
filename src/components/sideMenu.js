@@ -1,6 +1,9 @@
 import * as React from "react";
 import { styled, useTheme } from "@mui/material/styles";
 import { signOut } from "next-auth/react";
+import CssBaseline from '@mui/material/CssBaseline';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 import MuiDrawer from "@mui/material/Drawer";
 import MuiAppBar from "@mui/material/AppBar";
 import List from "@mui/material/List";
@@ -83,7 +86,8 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
-export default function SideMenu() {
+export default function SideMenu({matchers}) {
+  const { mobileMatches, tabletMatches, computerMatches } = matchers;
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
 
@@ -116,42 +120,73 @@ export default function SideMenu() {
     }
   };
 
+  const drawerVariant = () => {
+    if((mobileMatches || tabletMatches) && !computerMatches){
+      return open ? "permanent" : "temporary"
+    }
+
+    return "permanent"
+  }
+
   return (
-    <Drawer variant="permanent" open={open}>
-      <DrawerHeader>
-        <IconButton onClick={handleChangeDrawerState}>
-          {drawerButton()}
-        </IconButton>
-      </DrawerHeader>
-      <Divider />
-      <List>
-        {options.map((element) => (
-          <ListItem key={element.text} disablePadding sx={{ display: "block" }}>
-            <ListItemButton
-              sx={{
-                minHeight: 48,
-                justifyContent: open ? "initial" : "center",
-                px: 2.5,
-              }}
-              onClick={element.action}
+    <>
+      <CssBaseline />
+      <AppBar position="fixed" open={open}>
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            onClick={handleChangeDrawerState}
+            edge="start"
+            sx={{ mr: 2, ...(open && { display: 'none' }) }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div">
+            Co-Annotation Tool
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Drawer variant={drawerVariant()} open={open}>
+        <DrawerHeader>
+          <IconButton onClick={handleChangeDrawerState}>
+            {drawerButton()}
+          </IconButton>
+        </DrawerHeader>
+        <Divider />
+        <List>
+          {options.map((element) => (
+            <ListItem
+              key={element.text}
+              disablePadding
+              sx={{ display: "block" }}
             >
-              <ListItemIcon
+              <ListItemButton
                 sx={{
-                  minWidth: 0,
-                  mr: open ? 3 : "auto",
-                  justifyContent: "center",
+                  minHeight: 48,
+                  justifyContent: open ? "initial" : "center",
+                  px: 2.5,
                 }}
+                onClick={element.action}
               >
-                {element.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={element.text}
-                sx={{ opacity: open ? 1 : 0 }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Drawer>
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : "auto",
+                    justifyContent: "center",
+                  }}
+                >
+                  {element.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={element.text}
+                  sx={{ opacity: open ? 1 : 0 }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Drawer>
+    </>
   );
 }
