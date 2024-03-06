@@ -40,6 +40,10 @@ export default function Annotation() {
   const [reportFile, setReportFile] = useState({});
   const [QAS, setQAS] = useState([]);
   const [expandedAccordion, setExpandedAccordion] = useState(-1);
+  const [documentPosition, setDocumentPosition] = useState({
+    scale: 1,
+    translation: { x: 0, y: 0 },
+  });
   const [dialogData, setDialogData] = useState({
     open: false,
     qaIndex: null,
@@ -122,14 +126,25 @@ export default function Annotation() {
   };
 
   const scrollToElement = (index) => {
-    const element = document.getElementById(`BB_${index}`);
-    if (element) {
-      const elementRect = element.getBoundingClientRect();
-      window.scrollTo({
-        top: elementRect.top,
-        left: 0,
-        behavior: "smooth",
+    let box = QAS[index].boxes[0];
+    let boxY = box.y;
+    let boxX = box.x;
+    let coordY = boxY * reportFile.dimension.height - 50;
+    let coordX = boxX * reportFile.dimension.width - 50;
+    if ((mobileMatches || tabletMatches) && !computerMatches) {
+      setDocumentPosition({
+        scale: 1,
+        translation: { x: -coordX, y: -coordY },
       });
+    } else {
+      const element = document.getElementById(`BB_${index}`);
+      if (element) {
+        window.scrollTo({
+          top: coordY,
+          left: 0,
+          behavior: "smooth",
+        });
+      }
     }
   };
 
@@ -145,6 +160,7 @@ export default function Annotation() {
         }
         nextIndex += 1;
       }
+      scrollToElement(nextIndex);
       setExpandedAccordion(nextIndex);
     }
   };
@@ -233,7 +249,7 @@ export default function Annotation() {
         callback: resetQA,
         messages: {
           title: `${prefixTitle} pergunta ${qaIndex + 1}`,
-          body: `Tem certeza que deseja restaurar a pergunta ${qaIndex + 1}?`,
+          body: `Tem certeza que deseja ${prefixTitle.toLowerCase()} a pergunta ${qaIndex + 1}?`,
         },
       });
     }
@@ -362,7 +378,10 @@ export default function Annotation() {
                     pageWidth={reportFile.dimension.width}
                     QAS={QAS}
                     matchers={{ mobileMatches, tabletMatches, computerMatches }}
-                    focusQA={expandedAccordion}
+                    mobilePositionControl={{
+                      documentPosition,
+                      setDocumentPosition,
+                    }}
                   />
                 )}
               </Grid>
