@@ -64,9 +64,12 @@ export default function Annotation() {
 
   const getNewPageForAnnotation = () => {
     if (session) {
+      const elementContainer = document.getElementById("qas-container");
+      elementContainer.scrollTop = 0;
       setExpandedAccordion(0);
+
       annotationServices.getNextFile(session.user.token).then((data) => {
-        if (Object.keys(data).length === 0 || typeof(data) === 'string') {
+        if (Object.keys(data).length === 0 || typeof data === "string") {
           setFinishAnnotation(true);
           return;
         }
@@ -126,9 +129,8 @@ export default function Annotation() {
   };
 
   const scrollToElement = (index) => {
-    if(index >= QAS.length)
-      return
-    
+    if (index >= QAS.length) return;
+
     let box = QAS[index].boxes[0];
     let boxY = box.y;
     let boxX = box.x;
@@ -252,7 +254,9 @@ export default function Annotation() {
         callback: resetQA,
         messages: {
           title: `${prefixTitle} pergunta ${qaIndex + 1}`,
-          body: `Tem certeza que deseja ${prefixTitle.toLowerCase()} a pergunta ${qaIndex + 1}?`,
+          body: `Tem certeza que deseja ${prefixTitle.toLowerCase()} a pergunta ${
+            qaIndex + 1
+          }?`,
         },
       });
     }
@@ -374,7 +378,7 @@ export default function Annotation() {
                 alignItems="center"
                 justifyContent="center"
               >
-                {(Object.keys(reportFile).length > 0)&& (
+                {Object.keys(reportFile).length > 0 && (
                   <PdfViewer
                     filePath={`${process.env.NEXT_PUBLIC_REPORT_ENDPOINT}/${reportFile.ticker}/${reportFile.filename}`}
                     pageNumber={reportFile.page}
@@ -393,6 +397,7 @@ export default function Annotation() {
         </Grid>
       </Grid>
       <Box
+        id="qas-container"
         elevation={3}
         sx={{
           backgroundColor: "#FAFAFA",
