@@ -54,7 +54,7 @@ export default function Annotation() {
   const [finishAnnotation, setFinishAnnotation] = useState(false);
   const [strtTime, setStrtTime] = useState(new Date());
   const colorPallete = [
-    "rgba(245, 141, 5, 0.3)",
+    "rgba(250, 92, 92, 0.3)",
     "rgba(247, 207, 114, 0.3)",
     "rgba(51, 110, 131, 0.3)",
     "rgba(169, 187, 51, 0.3)",
