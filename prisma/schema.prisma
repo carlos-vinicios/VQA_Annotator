@@ -93,16 +93,16 @@ type Usage {
   total_tokens        Int
 }
 
-type QAs {
-  model_question      String
-  questions_boxes     BoundingBox[]
-  user_question       String
-  model_answer        String
-  answer_boxes        BoundingBox[]
-  user_answer         String
-  validated           Boolean   @default(false)
-  deleted             Boolean   @default(false)
-}
+//type QAs {
+//  model_question      String
+//  questions_boxes     BoundingBox[]
+//  user_question       String
+//  model_answer        String
+//  answer_boxes        BoundingBox[]
+//  user_answer         String
+//  validated           Boolean   @default(false)
+//  deleted             Boolean   @default(false)
+//}
 
 type PageDimension {
   width       Int
@@ -123,3 +123,40 @@ model PageTest {
 
   @@map("PageTest")
 }
+
+type EvaluationVote {
+  coherence   Int
+  objectivity Int
+  overall     Int
+  accuracy    Int?
+}
+
+type Vote {
+  overall       Int
+  question      EvaluationVote
+  answer        EvaluationVote
+  model         String
+}
+
+type QAs {
+  question        String
+  answer          String
+  answer_bboxes   BoundingBox[]
+  votes           Vote[]
+}
+
+model Annotations {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  filename             String
+  extracted_filename   String
+  ticker               String
+  page                 Int
+  page_size            PageDimension
+  questions            QAs[]
+  cost                 Usage
+  review_costs         Usage[]
+  
+  @@map("Annotations1_1")
+}
+
+
