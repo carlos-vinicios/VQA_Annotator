@@ -1,7 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Grid,
   Box,
@@ -15,25 +14,37 @@ import {
   AlertTitle,
   Collapse,
 } from "@mui/material";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
+import authService from "@/services/api/authService";
+import { setAuthDataCookie } from "@/services/auth";
+import { decodeAuthData } from "@/services/jwt";
 
-export default function Login() {
+export default async function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [loginError, setLoginError] = useState(false);
 
-  const handleLogin =  async () => {
-    const loginData = {email: email, token: token}
-    const res = await signIn('credentials', {
-      ...loginData,
-      redirect: false,
+  useEffect(() => {
+    decodeAuthData("systems").then((jwtDecode) => {
+      if (jwtDecode) {
+        router.push("/vote");
+      }
     });
-    if(!res.error){
-      router.push("/");
-    }else{
-      setLoginError(true)
-    }
+  }, []);
+  
+  const handleLogin = async () => {
+    const loginData = { username: email, password: token };
+    authService
+      .login(loginData)
+      .then((authData) => {
+        setAuthDataCookie(authData);
+        router.push("/vote");
+      })
+      .catch((err) => {
+        console.log("Erro no login:", err)
+        setLoginError(true);
+      });
   };
 
   return (
@@ -79,11 +90,8 @@ export default function Login() {
               </Grid>
               <Grid item xs={12} sm={12} lg={12}>
                 <Collapse in={loginError}>
-                  <Alert 
-                    onClose={() => setLoginError(false)}
-                    severity="error" 
-                  >
-                    Email ou token estão incorretos.            
+                  <Alert onClose={() => setLoginError(false)} severity="error">
+                    Email ou token estão incorretos.
                   </Alert>
                 </Collapse>
               </Grid>

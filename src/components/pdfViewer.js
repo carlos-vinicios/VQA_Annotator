@@ -5,7 +5,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Document, Page } from "react-pdf";
 import { Box } from "@mui/material";
 import { MapInteractionCSS } from "react-map-interaction";

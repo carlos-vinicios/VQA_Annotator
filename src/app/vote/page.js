@@ -2,37 +2,42 @@
 
 import { useState, useEffect } from "react";
 import {
-  Grid, Box, Paper, Rating, Button,
-  IconButton, Accordion, AccordionSummary,
-  AccordionDetails, Typography,
+  Grid,
+  Box,
+  Paper,
+  Rating,
+  Button,
+  IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Typography,
 } from "@mui/material";
 import voteService from "@/services/api/voteService";
 import PdfViewer from "@/components/pdfViewer";
 import FinishModal from "@/components/finishModal";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import {
-  CheckBoxRounded, ExpandMore, RemoveRedEye,
-} from "@mui/icons-material";
+import { CheckBoxRounded, ExpandMore, RemoveRedEye } from "@mui/icons-material";
 import InteractionDialog from "@/components/interactionDialog";
 import LoadBackdrop from "@/components/loadBackdrop";
 import SideMenu from "@/components/sideMenu";
 
 export default function Annotation() {
   const overallVote = {
-    overall: "Relevância"
-  }
+    overall: "Relevância",
+  };
 
   const questionVotes = {
-    coherence: "Coerência", 
-    objectivity: "Objetividade"
-  }
+    coherence: "Coerência",
+    objectivity: "Objetividade",
+  };
 
   const answerVotes = {
-    coherence: "Coerência", 
+    coherence: "Coerência",
     objectivity: "Objetividade",
-    accuracy: "Acurácia"
-  }
+    accuracy: "Acurácia",
+  };
 
   const theme = useTheme();
   const mobileMatches = useMediaQuery(theme.breakpoints.up("xs"));
@@ -68,7 +73,7 @@ export default function Annotation() {
     const elementContainer = document.getElementById("qas-container");
     elementContainer.scrollTop = 0;
     setExpandedAccordion(0);
-  
+
     voteService.getNextVoteFile().then((data) => {
       if (Object.keys(data).length === 0 || typeof data === "string") {
         setFinishAnnotation(true);
@@ -83,14 +88,14 @@ export default function Annotation() {
             vote: {
               overall: 0,
               question: {
-                coherence: 0, 
-                objectivity: 0
-              },           
-              answer: {
-                coherence: 0, 
+                coherence: 0,
                 objectivity: 0,
-                accuracy: 0
-              }
+              },
+              answer: {
+                coherence: 0,
+                objectivity: 0,
+                accuracy: 0,
+              },
             },
             validated: false,
             color: colorPallete[index],
@@ -100,7 +105,7 @@ export default function Annotation() {
       );
       setIsDataLoading(false);
     });
-  }
+  };
 
   useEffect(() => {
     getNewPageForVote();
@@ -111,28 +116,24 @@ export default function Annotation() {
     setIsDataLoading(true);
     let votes = [];
     for (let i = 0; i < QAS.length; i++) {
-      votes.push({...QAS[i].vote, model: "human"})
+      votes.push({ ...QAS[i].vote, model: "human" });
     }
-    
-    voteService
-      .saveVotes(
-        reportFile.file_id,
-        votes
-      )
-      .then(() => {
-        getNewPageForVote();
-      });
+
+    voteService.saveVotes(reportFile.file_id, votes).then(() => {
+      getNewPageForVote();
+    });
   };
 
   const scrollToElement = (index) => {
     if (index >= QAS.length) return;
 
+    if (QAS[index].answer_bboxes.length <= 0) return;
     let box = QAS[index].answer_bboxes[0];
     let boxY = box[1];
     let boxX = box[0];
     let coordY = boxY * reportFile.page_size.height - 50;
     let coordX = boxX * reportFile.page_size.width - 50;
-    
+
     if ((mobileMatches || tabletMatches) && !computerMatches) {
       setDocumentPosition({
         scale: 1,
@@ -205,7 +206,7 @@ export default function Annotation() {
     //vai ser chamado quando uma questão invalidada for clicada novamente e confirmada o popup
     if (QAS[qaIndex].validated) {
       const prefixTitle = "Editar";
-      
+
       setDialogData({
         open: true,
         qaIndex: qaIndex,
@@ -228,90 +229,100 @@ export default function Annotation() {
   };
 
   const getVoteRegion = (region) => {
-    var voteRegion = ''
-    var voteObject = {}
+    var voteRegion = "";
+    var voteObject = {};
     switch (region) {
       case "Pergunta":
-        voteRegion = 'question'
-        voteObject = questionVotes
-        break
+        voteRegion = "question";
+        voteObject = questionVotes;
+        break;
       case "Resposta":
-        voteRegion = 'answer'
-        voteObject = answerVotes
-        break
+        voteRegion = "answer";
+        voteObject = answerVotes;
+        break;
       case "Visão Geral":
-        voteRegion = 'overall'
-        voteObject = overallVote
-        break
+        voteRegion = "overall";
+        voteObject = overallVote;
+        break;
     }
 
-    return {voteRegion, voteObject}
-  }
+    return { voteRegion, voteObject };
+  };
 
   const voteRegion = (qa_index, region) => {
-    const {voteRegion, voteObject} = getVoteRegion(region)
+    const { voteRegion, voteObject } = getVoteRegion(region);
     return (
-      <Box component="fieldset" sx={{borderRadius: 1, padding: 2, mt: 2}}>
+      <Box component="fieldset" sx={{ borderRadius: 1, padding: 2, mt: 2 }}>
         <legend>{region}</legend>
         <Box display="flex" alignItems="center" key={`${qa_index}_${region}`}>
           {Object.keys(voteObject).map((key, index) => {
-            return voteBox(qa_index, region, key, voteObject[key])
+            return voteBox(qa_index, region, key, voteObject[key]);
           })}
         </Box>
       </Box>
-    )
-  }
+    );
+  };
 
   const updateSubVotes = (qa_index, voteField, field, newValue) => {
     //atualiza os valores e votos do segundo nível da estrutura de voto
-    setQAS((prevItems) => prevItems.map((item, index) => 
-      index === qa_index ? {
-        ...item,
-        vote: {
-          ...item.vote,
-          [voteField]: {
-            ...item.vote[voteField], 
-            [field]: newValue
-          } 
-        }
-      } : item
-    ))
-  }
+    setQAS((prevItems) =>
+      prevItems.map((item, index) =>
+        index === qa_index
+          ? {
+              ...item,
+              vote: {
+                ...item.vote,
+                [voteField]: {
+                  ...item.vote[voteField],
+                  [field]: newValue,
+                },
+              },
+            }
+          : item
+      )
+    );
+  };
 
   const updateVote = (qa_index, voteField, newValue) => {
     //atualiza os valores de votos do primeiro nível da estrutura de voto
-    setQAS((prevItems) => prevItems.map((item, index) => 
-      index === qa_index ? {
-        ...item,
-        vote: {
-          ...item.vote,
-          [voteField]: newValue
-        }
-      } : item
-    ))
-  }
+    setQAS((prevItems) =>
+      prevItems.map((item, index) =>
+        index === qa_index
+          ? {
+              ...item,
+              vote: {
+                ...item.vote,
+                [voteField]: newValue,
+              },
+            }
+          : item
+      )
+    );
+  };
 
   const voteBox = (qa_index, region, field, fieldLabel) => {
-    const {voteRegion, voteObject} = getVoteRegion(region)
-    
+    const { voteRegion, voteObject } = getVoteRegion(region);
+
     return (
-      <Box display="flex" alignItems="center" sx={{ml: 2}}>
-        <Typography sx={{mr: 1}}>{fieldLabel}: </Typography>  
-        <Rating 
+      <Box display="flex" alignItems="center" sx={{ ml: 2 }}>
+        <Typography sx={{ mr: 1 }}>{fieldLabel}: </Typography>
+        <Rating
           name={`${region}_${field}_vote`}
-          value={voteRegion === field ? 
-              QAS[qa_index].vote[voteRegion] : 
-              QAS[qa_index].vote[voteRegion][field]
+          value={
+            voteRegion === field
+              ? QAS[qa_index].vote[voteRegion]
+              : QAS[qa_index].vote[voteRegion][field]
           }
           onChange={(event, newValue) => {
-            voteRegion === "overall" ? updateVote(qa_index, voteRegion, newValue) :
-            updateSubVotes(qa_index, voteRegion, field, newValue)
+            voteRegion === "overall"
+              ? updateVote(qa_index, voteRegion, newValue)
+              : updateSubVotes(qa_index, voteRegion, field, newValue);
           }}
         />
       </Box>
-    )
-  }
-  
+    );
+  };
+
   const generateQAAccordions = () => {
     return QAS.map((element, index) => {
       return (
@@ -340,8 +351,8 @@ export default function Annotation() {
             <Typography>{element.answer}</Typography>
             {voteRegion(index, "Visão Geral")}
             {voteRegion(index, "Pergunta")}
-            {voteRegion(index, "Resposta")}            
-            
+            {voteRegion(index, "Resposta")}
+
             <Box sx={{ justifyContent: "space-between" }}>
               <IconButton
                 sx={{ float: "right" }}

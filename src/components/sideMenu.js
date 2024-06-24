@@ -1,6 +1,6 @@
 import * as React from "react";
 import { styled, useTheme } from "@mui/material/styles";
-import { signOut } from "next-auth/react";
+import { signOut } from "@/services/auth";
 import CssBaseline from '@mui/material/CssBaseline';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
