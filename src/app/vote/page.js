@@ -1,36 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import {
-  Grid,
-  Box,
-  Paper,
-  Rating,
-  Button,
-  IconButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Typography,
+  Grid, Box, Paper, Rating, Button,
+  IconButton, Accordion, AccordionSummary,
+  AccordionDetails, Typography,
 } from "@mui/material";
-import annotationServices from "@/services/api/annotationServices";
+import voteService from "@/services/api/voteService";
 import PdfViewer from "@/components/pdfViewer";
 import FinishModal from "@/components/finishModal";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import {
-  CheckBoxRounded,
-  Delete,
-  ExpandMore,
-  RemoveRedEye,
+  CheckBoxRounded, ExpandMore, RemoveRedEye,
 } from "@mui/icons-material";
 import InteractionDialog from "@/components/interactionDialog";
 import LoadBackdrop from "@/components/loadBackdrop";
 import SideMenu from "@/components/sideMenu";
 
 export default function Annotation() {
-  const { data: session, status } = useSession();
+  const overallVote = {
+    overall: "Relevância"
+  }
 
   const questionVotes = {
     coherence: "Coerência", 
@@ -61,7 +52,7 @@ export default function Annotation() {
     callback: null,
     messages: { title: "", body: "" },
   });
-  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [finishAnnotation, setFinishAnnotation] = useState(false);
   const [strtTime, setStrtTime] = useState(new Date());
   const colorPallete = [
@@ -73,96 +64,75 @@ export default function Annotation() {
     "rgba(5, 245, 237, 0.3)",
   ];
 
-  const getNewPageForAnnotation = () => {
-    // if (session) {
-      const elementContainer = document.getElementById("qas-container");
-      elementContainer.scrollTop = 0;
-      setExpandedAccordion(0);
-      setQAS([{
-        question: "Qual a pergunta?",
-        answer: "Essa certamente é a resposta",
-        boxes: [],
-        color: colorPallete[0],
-        vote: {
-          question: {
-            coherence: 2,
-            objectivity: 2
-          },
-          answer: {
-            coherence: 2,
-            objectivity: 2,
-            accuracy: 2
-          }
-        }
-      }])
-      // annotationServices.getNextFile(session.user.token).then((data) => {
-      //   if (Object.keys(data).length === 0 || typeof data === "string") {
-      //     setFinishAnnotation(true);
-      //     return;
-      //   }
-      //   setStrtTime(new Date());
-      //   setReportFile(data);
-      //   setQAS(
-      //     data.qas.map((element, index) => {
-      //       let newElementValue = {
-      //         question: element.model_question,
-      //         answer: element.model_answer,
-      //         boxes: [
-      //           ...JSON.parse(JSON.stringify(element.questions_boxes)),
-      //           ...JSON.parse(JSON.stringify(element.answer_boxes)),
-      //         ],
-      //         color: colorPallete[index],
-      //         validated: false,
-      //         deleted: false,
-      //       };
-      //       return newElementValue;
-      //     })
-      //   );
-      //   setIsDataLoading(false);
-      // });
-    // }
-  };
+  const getNewPageForVote = () => {
+    const elementContainer = document.getElementById("qas-container");
+    elementContainer.scrollTop = 0;
+    setExpandedAccordion(0);
+  
+    voteService.getNextVoteFile().then((data) => {
+      if (Object.keys(data).length === 0 || typeof data === "string") {
+        setFinishAnnotation(true);
+        return;
+      }
+      setStrtTime(new Date());
+      setReportFile(data);
+      setQAS(
+        data.questions.map((element, index) => {
+          let newElementValue = {
+            ...element,
+            vote: {
+              overall: 0,
+              question: {
+                coherence: 0, 
+                objectivity: 0
+              },           
+              answer: {
+                coherence: 0, 
+                objectivity: 0,
+                accuracy: 0
+              }
+            },
+            validated: false,
+            color: colorPallete[index],
+          };
+          return newElementValue;
+        })
+      );
+      setIsDataLoading(false);
+    });
+  }
 
   useEffect(() => {
-    getNewPageForAnnotation();
-  }, [status]);
+    getNewPageForVote();
+  }, []);
 
-  const saveAnnotations = () => {
+  const saveVotes = () => {
     //aqui só vou enviar os dados para a rota de registro de anotação do backend
     setIsDataLoading(true);
-    let newQAs = [];
+    let votes = [];
     for (let i = 0; i < QAS.length; i++) {
-      const user_element = QAS[i];
-      const model_element = reportFile.qas[i];
-      newQAs.push({
-        ...model_element,
-        user_question: user_element.question,
-        user_answer: user_element.answer,
-        validated: user_element.validated,
-        deleted: user_element.deleted,
-      });
+      votes.push({...QAS[i].vote, model: "human"})
     }
-
-    annotationServices
-      .saveAnnotations({
-        ...reportFile,
-        elapsedTime: new Date() - strtTime,
-        qas: newQAs,
-        annotated: true,
-      })
+    
+    voteService
+      .saveVotes(
+        reportFile.file_id,
+        votes
+      )
       .then(() => {
-        getNewPageForAnnotation();
+        getNewPageForVote();
       });
   };
 
   const scrollToElement = (index) => {
     if (index >= QAS.length) return;
 
-    let box = QAS[index].boxes[0];
-    let boxY = box.y;
-    let boxX = box.x;
-    let coordY = boxY * reportFile.dimension.height - 50;
-    let coordX = boxX * reportFile.dimension.width - 50;
+    let box = QAS[index].answer_bboxes[0];
+    let boxY = box[1];
+    let boxX = box[0];
+    let coordY = boxY * reportFile.page_size.height - 50;
+    let coordX = boxX * reportFile.page_size.width - 50;
+    
     if ((mobileMatches || tabletMatches) && !computerMatches) {
       setDocumentPosition({
         scale: 1,
@@ -209,42 +179,6 @@ export default function Annotation() {
     nextQAAccordion(qaIndex);
   };
 
-  const deleteQA = (confirmed, qaIndex) => {
-    //vai ser disparado quando a deleção de questão for chamada
-    setDialogData({
-      open: false,
-      qaIndex: null,
-      callback: null,
-      messages: {
-        title: "",
-        body: "",
-      },
-    });
-    if (confirmed) {
-      var newQAs = QAS.map((qa, i) => {
-        if (i === qaIndex) {
-          qa.validated = true;
-          qa.deleted = true;
-        }
-        return qa;
-      });
-      setQAS(newQAs);
-      nextQAAccordion(qaIndex);
-    }
-  };
-
-  const handleDeleteQA = (qaIndex) => {
-    setDialogData({
-      open: true,
-      qaIndex: qaIndex,
-      callback: deleteQA,
-      messages: {
-        title: `Excluir pergunta ${qaIndex + 1}`,
-        body: `Tem certeza que deseja excluir a pergunta ${qaIndex + 1}?`,
-      },
-    });
-  };
-
   const resetQA = (confirmed, qaIndex) => {
     setDialogData({
       open: false,
@@ -259,7 +193,6 @@ export default function Annotation() {
       var newQAs = QAS.map((qa, i) => {
         if (i === qaIndex) {
           qa.validated = false;
-          qa.deleted = false;
         }
         return qa;
       });
@@ -270,18 +203,16 @@ export default function Annotation() {
 
   const handleResetQA = (qaIndex) => {
     //vai ser chamado quando uma questão invalidada for clicada novamente e confirmada o popup
-    if (QAS[qaIndex].deleted || QAS[qaIndex].validated) {
-      let prefixTitle = "";
-      if (QAS[qaIndex].deleted) prefixTitle = "Restaurar";
-      else if (QAS[qaIndex].validated) prefixTitle = "Editar";
-
+    if (QAS[qaIndex].validated) {
+      const prefixTitle = "Editar";
+      
       setDialogData({
         open: true,
         qaIndex: qaIndex,
         callback: resetQA,
         messages: {
           title: `${prefixTitle} pergunta ${qaIndex + 1}`,
-          body: `Tem certeza que deseja ${prefixTitle.toLowerCase()} a pergunta ${
+          body: `Tem certeza que deseja ${prefixTitle.toLowerCase()} a votação da pergunta ${
             qaIndex + 1
           }?`,
         },
@@ -296,53 +227,85 @@ export default function Annotation() {
     else return " - Validada";
   };
 
-  const updateQA = (qaIndex, atrib, value) => {
-    setQAS(
-      QAS.map((element, index) => {
-        if (qaIndex === index) {
-          element[atrib] = value;
-        }
-        return element;
-      })
-    );
-  };
+  const getVoteRegion = (region) => {
+    var voteRegion = ''
+    var voteObject = {}
+    switch (region) {
+      case "Pergunta":
+        voteRegion = 'question'
+        voteObject = questionVotes
+        break
+      case "Resposta":
+        voteRegion = 'answer'
+        voteObject = answerVotes
+        break
+      case "Visão Geral":
+        voteRegion = 'overall'
+        voteObject = overallVote
+        break
+    }
+
+    return {voteRegion, voteObject}
+  }
 
   const voteRegion = (qa_index, region) => {
-    const votes = region === "Pergunta" ? questionVotes : answerVotes;
+    const {voteRegion, voteObject} = getVoteRegion(region)
     return (
       <Box component="fieldset" sx={{borderRadius: 1, padding: 2, mt: 2}}>
         <legend>{region}</legend>
-        <Box display="flex" alignItems="center">
-          {Object.keys(votes).map((key, index) => {
-            return voteBox(qa_index, region, key, votes[key])
+        <Box display="flex" alignItems="center" key={`${qa_index}_${region}`}>
+          {Object.keys(voteObject).map((key, index) => {
+            return voteBox(qa_index, region, key, voteObject[key])
           })}
         </Box>
       </Box>
     )
   }
 
+  const updateSubVotes = (qa_index, voteField, field, newValue) => {
+    //atualiza os valores e votos do segundo nível da estrutura de voto
+    setQAS((prevItems) => prevItems.map((item, index) => 
+      index === qa_index ? {
+        ...item,
+        vote: {
+          ...item.vote,
+          [voteField]: {
+            ...item.vote[voteField], 
+            [field]: newValue
+          } 
+        }
+      } : item
+    ))
+  }
+
+  const updateVote = (qa_index, voteField, newValue) => {
+    //atualiza os valores de votos do primeiro nível da estrutura de voto
+    setQAS((prevItems) => prevItems.map((item, index) => 
+      index === qa_index ? {
+        ...item,
+        vote: {
+          ...item.vote,
+          [voteField]: newValue
+        }
+      } : item
+    ))
+  }
+
   const voteBox = (qa_index, region, field, fieldLabel) => {
-    const voteRegion = region === "Pergunta" ? 'question' : 'answer';
-    console.log(voteRegion, field, QAS[qa_index].vote[voteRegion][field])
+    const {voteRegion, voteObject} = getVoteRegion(region)
+    
     return (
       <Box display="flex" alignItems="center" sx={{ml: 2}}>
         <Typography sx={{mr: 1}}>{fieldLabel}: </Typography>  
         <Rating 
           name={`${region}_${field}_vote`}
-          value={QAS[qa_index].vote[voteRegion][field]}
+          value={voteRegion === field ? 
+              QAS[qa_index].vote[voteRegion] : 
+              QAS[qa_index].vote[voteRegion][field]
+          }
           onChange={(event, newValue) => {
-            setQAS((prevItems) => prevItems.map((item, index) => 
-              index === qa_index ? {
-                ...item,
-                vote: {
-                  ...item.vote,
-                  [voteRegion]: {
-                    ...item.vote[voteRegion], 
-                    [field]: newValue
-                  } 
-                }
-              } : item
-            ))
+            voteRegion === "overall" ? updateVote(qa_index, voteRegion, newValue) :
+            updateSubVotes(qa_index, voteRegion, field, newValue)
           }}
         />
       </Box>
@@ -350,7 +313,6 @@ export default function Annotation() {
   }
   
   const generateQAAccordions = () => {
-    console.log(QAS)
     return QAS.map((element, index) => {
       return (
         <Accordion
@@ -376,8 +338,9 @@ export default function Annotation() {
           <AccordionDetails>
             <Typography>{element.question}</Typography>
             <Typography>{element.answer}</Typography>
+            {voteRegion(index, "Visão Geral")}
             {voteRegion(index, "Pergunta")}
-            {voteRegion(index, "Resposta")}
+            {voteRegion(index, "Resposta")}            
             
             <Box sx={{ justifyContent: "space-between" }}>
               <IconButton
@@ -434,9 +397,9 @@ export default function Annotation() {
               >
                 {Object.keys(reportFile).length > 0 && (
                   <PdfViewer
-                    filePath={`${process.env.NEXT_PUBLIC_REPORT_ENDPOINT}/${reportFile.ticker}/${reportFile.filename}`}
+                    filePath={`${process.env.NEXT_PUBLIC_API_HOST}/document/${reportFile.file_id}`}
                     pageNumber={reportFile.page}
-                    pageWidth={reportFile.dimension.width}
+                    pageWidth={reportFile.page_size.width}
                     QAS={QAS}
                     matchers={{ mobileMatches, tabletMatches, computerMatches }}
                     mobilePositionControl={{
@@ -490,7 +453,7 @@ export default function Annotation() {
             color="success"
             fullWidth={(mobileMatches || tabletMatches) && !computerMatches}
             disabled={!validationChecker(QAS)}
-            onClick={saveAnnotations}
+            onClick={saveVotes}
           >
             Salvar
           </Button>

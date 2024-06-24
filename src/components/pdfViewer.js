@@ -32,10 +32,10 @@ export default function PdfViewer({
     if (BoxRef.current) {
       setBoxesElements(
         boxes.map((element, index) => {
-          let w = pageBox.width * element.w;
-          let h = pageBox.height * element.h;
-          let x = pageBox.width * element.x + BoxRef.current.offsetLeft;
-          let y = pageBox.height * element.y + BoxRef.current.offsetTop;
+          let w = pageBox.width * element[2];
+          let h = pageBox.height * element[3];
+          let x = pageBox.width * element[0] + BoxRef.current.offsetLeft;
+          let y = pageBox.height * element[1] + BoxRef.current.offsetTop;
           return (
             <Box
               id={`BB_${index}`}
@@ -59,7 +59,7 @@ export default function PdfViewer({
   function onPageLoadSuccess(props) {
     var boxes = [];
     QAS.forEach((element) => {
-      element.boxes.forEach((box) => {
+      element.answer_bboxes.forEach((box) => {
         box.color = element.color;
         boxes.push(box);
       });
