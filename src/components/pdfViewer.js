@@ -25,6 +25,7 @@ export default function PdfViewer({
 
   function pdfViewSize() {
     if (mobileMatches && !tabletMatches && !computerMatches) return 350;
+    if (mobileMatches && tabletMatches && !computerMatches) return 660;
     return pageWidth;
   }
 
@@ -85,7 +86,7 @@ export default function PdfViewer({
   }
 
   function pdfViewMode() {
-    if (mobileMatches && !tabletMatches && !computerMatches) {
+    if ((mobileMatches || tabletMatches) && !computerMatches) {
       return (
         <MapInteractionCSS
           value={documentPosition}

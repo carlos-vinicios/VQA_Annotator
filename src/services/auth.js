@@ -5,21 +5,17 @@ import { setCookie } from "nookies";
 
 const signOut = () => {
   destroyCookie(undefined, "systems");
-
   Router.push("/login");
 };
 
 const setAuthDataCookie = ({ email, stage, access_token, refresh_token }) => {
-  encodeAuthData({
+  const encodedAuthData = encodeAuthData({
     email,
     stage,
     access_token,
     refresh_token,
-  }).then((jwtUserData) => {
-    setCookie(undefined, "systems", jwtUserData);
-  }).catch(() => {
-    console.log("Falha no registro da sessão de usuário")
   });
+  setCookie(undefined, "systems", encodedAuthData);
 };
 
 export { signOut, setAuthDataCookie };

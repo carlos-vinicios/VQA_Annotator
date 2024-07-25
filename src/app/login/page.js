@@ -11,7 +11,6 @@ import {
   Input,
   Typography,
   Alert,
-  AlertTitle,
   Collapse,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
@@ -19,21 +18,20 @@ import authService from "@/services/api/authService";
 import { setAuthDataCookie } from "@/services/auth";
 import { decodeAuthData } from "@/services/jwt";
 
-export default async function Login() {
+export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [loginError, setLoginError] = useState(false);
 
   useEffect(() => {
-    decodeAuthData("systems").then((jwtDecode) => {
-      if (jwtDecode) {
-        router.push("/vote");
-      }
-    });
+    const authData = decodeAuthData("systems");
+    if (authData) {
+      router.push("/vote");
+    }
   }, []);
-  
-  const handleLogin = async () => {
+
+  const handleLogin = () => {
     const loginData = { username: email, password: token };
     authService
       .login(loginData)
@@ -42,7 +40,7 @@ export default async function Login() {
         router.push("/vote");
       })
       .catch((err) => {
-        console.log("Erro no login:", err)
+        console.log("Erro no login:", err);
         setLoginError(true);
       });
   };

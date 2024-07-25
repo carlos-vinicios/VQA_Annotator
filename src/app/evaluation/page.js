@@ -5,7 +5,11 @@ import {
   Grid,
   Box,
   Paper,
-  Rating,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
   Button,
   IconButton,
   Accordion,
@@ -24,14 +28,10 @@ import LoadBackdrop from "@/components/loadBackdrop";
 import SideMenu from "@/components/sideMenu";
 
 export default function Annotation() {
-  const questionVotes = {
-    relevance: "Relevância",
-    coherence: "Coerência",
-    objectivity: "Objetividade",
-  };
-
-  const answerVotes = {
-    accuracy: "Acurácia",
+  const evaluationSteps = {
+    coherent: "A pergunta é coerente?",
+    relevant: "A pergunta é relevante?",
+    correct: "A resposta está correta?",
   };
 
   const theme = useTheme();
@@ -64,49 +64,47 @@ export default function Annotation() {
     "rgba(5, 245, 237, 0.3)",
   ];
 
-  const getNewPageForVote = () => {
+  const getNewPageForEvaluation = () => {
     const elementContainer = document.getElementById("qas-container");
     elementContainer.scrollTop = 0;
     setExpandedAccordion(0);
 
-    voteService.getNextVoteFile().then((data) => {
-      setStrtTime(new Date());
-      setReportFile(data);
-      setQAS(
-        data.questions.map((element, index) => {
-          let newElementValue = {
-            ...element,
-            vote: {
-              question: {
-                relevance: 0,
-                coherence: 0,
-                objectivity: 0,
+    voteService
+      .getNextVoteFile()
+      .then((data) => {
+        setStrtTime(new Date());
+        setReportFile(data);
+        setQAS(
+          data.questions.map((element, index) => {
+            let newElementValue = {
+              ...element,
+              vote: {
+                coherent: false,
+                relevant: false,
+                correct: false,
               },
-              answer: {
-                accuracy: 0,
-              },
-            },
-            validated: false,
-            color: colorPallete[index],
-          };
-          return newElementValue;
-        })
-      );
-      setIsDataLoading(false);
-    }).catch((error) => {
-      console.log(error)
-      // if (Object.keys(data).length === 0 || typeof data === "string") {
-      //   setFinishAnnotation(true);
-      //   return;
-      // }
-    });
+              validated: false,
+              color: colorPallete[index],
+            };
+            return newElementValue;
+          })
+        );
+        setIsDataLoading(false);
+      })
+      .catch((error) => {
+        console.log(error);
+        // if (Object.keys(data).length === 0 || typeof data === "string") {
+        //   setFinishAnnotation(true);
+        //   return;
+        // }
+      });
   };
 
   useEffect(() => {
-    getNewPageForVote();
+    getNewPageForEvaluation();
   }, []);
 
-  const saveVotes = () => {
+  const saveEvaluations = () => {
     //aqui só vou enviar os dados para a rota de registro de anotação do backend
     setIsDataLoading(true);
     let votes = [];
@@ -115,7 +113,7 @@ export default function Annotation() {
     }
 
     voteService.saveVotes(reportFile.file_id, votes).then(() => {
-      getNewPageForVote();
+      getNewPageForEvaluation();
     });
   };
 
@@ -223,47 +221,7 @@ export default function Annotation() {
     else return " - Validada";
   };
 
-  const getVoteRegion = (region) => {
-    var voteRegion = "";
-    var voteObject = {};
-    switch (region) {
-      case "Pergunta":
-        voteRegion = "question";
-        voteObject = questionVotes;
-        break;
-      case "Resposta":
-        voteRegion = "answer";
-        voteObject = answerVotes;
-        break;
-    }
-
-    return { voteRegion, voteObject };
-  };
-
-  const voteRegion = (qa_index, region) => {
-    const { voteRegion, voteObject } = getVoteRegion(region);
-    return (
-      <Box component="fieldset" sx={{ borderRadius: 1, padding: 2, mt: 2 }}>
-        <legend>{region}</legend>
-        <Grid container>
-          {Object.keys(voteObject).map((key, index) => {
-            return (
-              <Grid item sm={12} mt={index > 0 ? 3 : 0}>
-                {voteBox(qa_index, region, key, voteObject[key])}
-              </Grid>
-            );
-          })}
-        </Grid>
-        {/* <Box display="flex" alignItems="center" key={`${qa_index}_${region}`}>
-          {Object.keys(voteObject).map((key, index) => {
-            return voteBox(qa_index, region, key, voteObject[key]);
-          })}
-        </Box> */}
-      </Box>
-    );
-  };
-
-  const updateVotes = (qa_index, voteField, field, newValue) => {
+  const updateEvaluation = (qa_index, eval_key, response) => {
     //atualiza os valores e votos do segundo nível da estrutura de voto
     setQAS((prevItems) =>
       prevItems.map((item, index) =>
@@ -272,10 +230,7 @@ export default function Annotation() {
               ...item,
               vote: {
                 ...item.vote,
-                [voteField]: {
-                  ...item.vote[voteField],
-                  [field]: newValue,
-                },
+                [eval_key]: response,
               },
             }
           : item
@@ -283,21 +238,56 @@ export default function Annotation() {
     );
   };
 
-  const voteBox = (qa_index, region, field, fieldLabel) => {
-    const { voteRegion, voteObject } = getVoteRegion(region);
+  const mapEvaluationRelations = (qa_index, key) => {
+    //fornece a relação atual e mapeia-se as dependências hierarquicas delas
+    switch (key) {
+      case "coherent":
+        return false;
+      case "relevant":
+      case "correct":
+        return !QAS[qa_index].vote.coherent;
+    }
+  };
 
+  const evaluationBox = (qa_index) => {
     return (
-      <Box display="flex" alignItems="center" sx={{ ml: 2 }}>
-        <Typography sx={{ mr: 1 }}>{fieldLabel}: </Typography>
-        <Rating
-          key={`${region}_${field}_vote_${qa_index}`}
-          name={`${region}_${field}_vote_${qa_index}`}
-          value={QAS[qa_index].vote[voteRegion][field]}
-          onChange={(event, newValue) => {
-            updateVotes(qa_index, voteRegion, field, newValue);
-          }}
-        />
-      </Box>
+      <Grid container>
+        {Object.keys(evaluationSteps).map((key, index) => {
+          return (
+            <Grid item sm={12} lg={4} mt={3}>
+              <FormControl display="flex">
+                <FormLabel
+                  id="qa-eval-radio-buttons-group"
+                  sx={{ color: "#000" }}
+                >
+                  {evaluationSteps[key]}
+                </FormLabel>
+                <RadioGroup
+                  row
+                  aria-labelledby="qa-eval-radio-buttons-group"
+                  name={`${key}_evaluation_${qa_index}`}
+                  value={QAS[qa_index].vote[key]}
+                  onChange={(event, newValue) => {
+                    updateEvaluation(qa_index, key, newValue);
+                  }}
+                >
+                  <FormControlLabel
+                    value={true}
+                    control={<Radio />}
+                    label="Sim"
+                    disabled={mapEvaluationRelations(qa_index, key)}
+                  />
+                  <FormControlLabel
+                    value={false}
+                    control={<Radio />}
+                    label="Não"
+                  />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+          );
+        })}
+      </Grid>
     );
   };
 
@@ -327,8 +317,7 @@ export default function Annotation() {
           <AccordionDetails>
             <Typography>Pergunta: {element.question}</Typography>
             <Typography>Resposta: {element.answer}</Typography>
-            {voteRegion(index, "Pergunta")}
-            {voteRegion(index, "Resposta")}
+            {evaluationBox(index)}
 
             <Box sx={{ justifyContent: "space-between" }}>
               <IconButton
@@ -441,7 +430,7 @@ export default function Annotation() {
             color="success"
             fullWidth={(mobileMatches || tabletMatches) && !computerMatches}
             disabled={!validationChecker(QAS)}
-            onClick={saveVotes}
+            onClick={saveEvaluations}
           >
             Salvar
           </Button>

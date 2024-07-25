@@ -1,9 +1,12 @@
+"use client";
+
 import * as React from "react";
 import { styled, useTheme } from "@mui/material/styles";
 import { signOut } from "@/services/auth";
-import CssBaseline from '@mui/material/CssBaseline';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
+import { useRouter } from "next/navigation";
+import CssBaseline from "@mui/material/CssBaseline";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
 import MuiDrawer from "@mui/material/Drawer";
 import MuiAppBar from "@mui/material/AppBar";
 import List from "@mui/material/List";
@@ -18,6 +21,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import LogoutIcon from "@mui/icons-material/Logout";
 import EditNoteIcon from "@mui/icons-material/EditNote";
+import FindInPageIcon from "@mui/icons-material/FindInPage";
 
 const drawerWidth = 240;
 
@@ -86,13 +90,21 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
-export default function SideMenu({matchers}) {
+export default function SideMenu({ matchers }) {
   const { mobileMatches, tabletMatches, computerMatches } = matchers;
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
+  const router = useRouter()
 
   const goToAnnotation = () => {
     //caso tenha mais de um página no futuro, colocar o controle aqui
+    router.push("/evaluation");
+    return;
+  };
+
+  const goToVisualization = () => {
+    //caso tenha mais de um página no futuro, colocar o controle aqui
+    router.push("/visualization");
     return;
   };
 
@@ -103,6 +115,11 @@ export default function SideMenu({matchers}) {
 
   const options = [
     { text: "Anotação", icon: <EditNoteIcon />, action: goToAnnotation },
+    {
+      text: "Visulização",
+      icon: <FindInPageIcon />,
+      action: goToVisualization,
+    },
     { text: "Sair", icon: <LogoutIcon />, action: handleSingOut },
   ];
 
@@ -121,12 +138,12 @@ export default function SideMenu({matchers}) {
   };
 
   const drawerVariant = () => {
-    if((mobileMatches || tabletMatches) && !computerMatches){
-      return open ? "permanent" : "temporary"
+    if ((mobileMatches || tabletMatches) && !computerMatches) {
+      return open ? "permanent" : "temporary";
     }
 
-    return "permanent"
-  }
+    return "permanent";
+  };
 
   return (
     <>
@@ -138,7 +155,7 @@ export default function SideMenu({matchers}) {
             aria-label="open drawer"
             onClick={handleChangeDrawerState}
             edge="start"
-            sx={{ mr: 2, ...(open && { display: 'none' }) }}
+            sx={{ mr: 2, ...(open && { display: "none" }) }}
           >
             <MenuIcon />
           </IconButton>
