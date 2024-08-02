@@ -115,12 +115,7 @@ export default function SideMenu({ matchers }) {
   };
 
   const options = [
-    { text: "Anotação", icon: <EditNoteIcon />, action: goToAnnotation },
-    {
-      text: "Visulização",
-      icon: <FindInPageIcon />,
-      action: goToVisualization,
-    },
+    { text: "Avaliação", icon: <EditNoteIcon />, action: goToAnnotation },
     { text: "Sair", icon: <LogoutIcon />, action: handleSingOut },
   ];
 

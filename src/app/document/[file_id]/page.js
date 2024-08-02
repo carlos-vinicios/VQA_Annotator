@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Grid,
   Box,
@@ -31,7 +32,7 @@ import SideMenu from "@/components/sideMenu";
 
 export default function DocumentView() {
   const params = useParams();
-
+  const router = useRouter();
   const evaluationSteps = {
     coherent: "A pergunta é coerente?",
     relevant: "A pergunta é relevante?",
@@ -140,6 +141,10 @@ export default function DocumentView() {
     if (params.file_id === "evaluation") getNewPageForEvaluation();
     else getFileToView();
   }, []);
+
+  const backToResume = () => {
+    router.push("/resume");
+  };
 
   const saveEvaluations = () => {
     //aqui só vou enviar os dados para a rota de registro de anotação do backend
@@ -356,7 +361,7 @@ export default function DocumentView() {
           <AccordionDetails>
             <Typography>Pergunta: {element.question}</Typography>
             <Typography>Resposta: {element.answer}</Typography>
-            {!viewMode && (evaluationBox(index))}
+            {!viewMode && evaluationBox(index)}
 
             <Box sx={{ justifyContent: "space-between" }}>
               {!viewMode && (
@@ -476,6 +481,17 @@ export default function DocumentView() {
           }}
           justifyContent="flex-end"
         >
+          <Button
+            variant="contained"
+            fullWidth={(mobileMatches || tabletMatches) && !computerMatches}
+            onClick={backToResume}
+            sx={{
+              mr: (mobileMatches || tabletMatches) && !computerMatches ? 0 : 4,
+              mb: (mobileMatches || tabletMatches) && !computerMatches ? 4 : 0
+            }}
+          >
+            Voltar
+          </Button>
           {!viewMode && (
             <Button
               variant="contained"
