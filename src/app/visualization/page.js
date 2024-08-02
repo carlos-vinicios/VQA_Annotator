@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from 'next/navigation'
 import {
   Grid,
   Box,
@@ -17,7 +18,7 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
-import voteService from "@/services/api/voteService";
+import evaluationService from "@/services/api/evaluationService";
 import PdfViewer from "@/components/pdfViewer";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -26,6 +27,8 @@ import LoadBackdrop from "@/components/loadBackdrop";
 import SideMenu from "@/components/sideMenu";
 
 export default function Visualization() {
+  const params = useParams()
+
   const theme = useTheme();
   const mobileMatches = useMediaQuery(theme.breakpoints.up("xs"));
   const tabletMatches = useMediaQuery(theme.breakpoints.up("sm"));
@@ -54,7 +57,7 @@ export default function Visualization() {
     setIsDataLoading(true);
     const elementContainer = document.getElementById("qas-container");
     elementContainer.scrollTop = 0;
-    voteService
+    evaluationService
       .getFileToVisualize(filename, generationModel)
       .then((data) => {
         console.log(data);

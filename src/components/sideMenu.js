@@ -98,7 +98,7 @@ export default function SideMenu({ matchers }) {
 
   const goToAnnotation = () => {
     //caso tenha mais de um página no futuro, colocar o controle aqui
-    router.push("/evaluation");
+    router.push("/resume");
     return;
   };
 
@@ -110,7 +110,8 @@ export default function SideMenu({ matchers }) {
 
   const handleSingOut = () => {
     //remove os cookies de sessão e redireciona para o login
-    signOut({ callbackUrl: "/login", redirect: true });
+    signOut();
+    router.push("/login")
   };
 
   const options = [

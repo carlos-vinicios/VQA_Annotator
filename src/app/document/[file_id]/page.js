@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import {
   Grid,
   Box,
   Paper,
-  Rating,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
   Button,
   IconButton,
   Accordion,
@@ -13,7 +18,8 @@ import {
   AccordionDetails,
   Typography,
 } from "@mui/material";
-import voteService from "@/services/api/voteService";
+import evaluationService from "@/services/api/evaluationService";
+import documentService from "@/services/api/documentService";
 import PdfViewer from "@/components/pdfViewer";
 import FinishModal from "@/components/finishModal";
 import { useTheme } from "@mui/material/styles";
@@ -23,15 +29,13 @@ import InteractionDialog from "@/components/interactionDialog";
 import LoadBackdrop from "@/components/loadBackdrop";
 import SideMenu from "@/components/sideMenu";
 
-export default function Annotation() {
-  const questionVotes = {
-    relevance: "Relevância",
-    coherence: "Coerência",
-    objectivity: "Objetividade",
-  };
+export default function DocumentView() {
+  const params = useParams();
 
-  const answerVotes = {
-    accuracy: "Acurácia",
+  const evaluationSteps = {
+    coherent: "A pergunta é coerente?",
+    relevant: "A pergunta é relevante?",
+    correct: "A resposta está correta?",
   };
 
   const theme = useTheme();
@@ -39,6 +43,7 @@ export default function Annotation() {
   const tabletMatches = useMediaQuery(theme.breakpoints.up("sm"));
   const computerMatches = useMediaQuery(theme.breakpoints.up("lg"));
 
+  const [viewMode, setViewMode] = useState(true);
   const [reportFile, setReportFile] = useState({});
   const [QAS, setQAS] = useState([]);
   const [expandedAccordion, setExpandedAccordion] = useState(-1);
@@ -64,49 +69,79 @@ export default function Annotation() {
     "rgba(5, 245, 237, 0.3)",
   ];
 
-  const getNewPageForVote = () => {
+  const getNewPageForEvaluation = () => {
     const elementContainer = document.getElementById("qas-container");
     elementContainer.scrollTop = 0;
     setExpandedAccordion(0);
 
-    voteService.getNextVoteFile().then((data) => {
-      setStrtTime(new Date());
-      setReportFile(data);
-      setQAS(
-        data.questions.map((element, index) => {
-          let newElementValue = {
-            ...element,
-            vote: {
-              question: {
-                relevance: 0,
-                coherence: 0,
-                objectivity: 0,
+    evaluationService
+      .getNextEvaluationFile()
+      .then((data) => {
+        setStrtTime(new Date());
+        setViewMode(false);
+        setReportFile(data);
+        setQAS(
+          data.questions.map((element, index) => {
+            let newElementValue = {
+              ...element,
+              vote: {
+                coherent: false,
+                relevant: false,
+                correct: false,
               },
-              answer: {
-                accuracy: 0,
+              validated: false,
+              color: colorPallete[index],
+            };
+            return newElementValue;
+          })
+        );
+        setIsDataLoading(false);
+      })
+      .catch((error) => {
+        if (error.response.status === 404) {
+          setFinishAnnotation(true);
+          return;
+        }
+      });
+  };
+
+  const getFileToView = () => {
+    documentService
+      .getFileToVisualize(params.file_id.replace("ed_", ""))
+      .then((data) => {
+        if (params.file_id.includes("ed_")) setViewMode(false);
+        else setViewMode(true);
+
+        setReportFile(data);
+        setQAS(
+          data.questions.map((element, index) => {
+            let newElementValue = {
+              ...element,
+              vote: {
+                coherent: false,
+                relevant: false,
+                correct: false,
               },
-            },
-            validated: false,
-            color: colorPallete[index],
-          };
-          return newElementValue;
-        })
-      );
-      setIsDataLoading(false);
-    }).catch((error) => {
-      console.log(error)
-      // if (Object.keys(data).length === 0 || typeof data === "string") {
-      //   setFinishAnnotation(true);
-      //   return;
-      // }
-    });
+              validated: false,
+              color: colorPallete[index],
+            };
+            return newElementValue;
+          })
+        );
+        setIsDataLoading(false);
+        setExpandedAccordion(0);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
 
   useEffect(() => {
-    getNewPageForVote();
+    if (params.file_id === "evaluation") getNewPageForEvaluation();
+    else getFileToView();
   }, []);
 
-  const saveVotes = () => {
+  const saveEvaluations = () => {
     //aqui só vou enviar os dados para a rota de registro de anotação do backend
     setIsDataLoading(true);
     let votes = [];
@@ -114,8 +149,8 @@ export default function Annotation() {
       votes.push({ ...QAS[i].vote, model: "human" });
     }
 
-    voteService.saveVotes(reportFile.file_id, votes).then(() => {
-      getNewPageForVote();
+    evaluationService.saveEvaluations(reportFile.file_id, votes).then(() => {
+      getNewPageForEvaluation();
     });
   };
 
@@ -148,7 +183,7 @@ export default function Annotation() {
 
   const nextQAAccordion = (qaIndex) => {
     //vai abrir a próxima pergunta que deve ser verificada
-    if (qaIndex < QAS.length) {
+    if (qaIndex < QAS.length && !viewMode) {
       let nextIndex = qaIndex;
       //vamos buscar pela QA que ainda não foi validada
       for (let i = nextIndex; i < QAS.length; i++) {
@@ -176,6 +211,8 @@ export default function Annotation() {
   };
 
   const resetQA = (confirmed, qaIndex) => {
+    if (viewMode) return;
+
     setDialogData({
       open: false,
       qaIndex: null,
@@ -217,53 +254,13 @@ export default function Annotation() {
   };
 
   const accordionLabel = (elementIndex, element) => {
-    if (expandedAccordion === elementIndex) return "";
+    if (expandedAccordion === elementIndex || viewMode) return "";
     if (element.deleted) return " - Excluída";
     if (!element.validated) return " - Pendente";
     else return " - Validada";
   };
 
-  const getVoteRegion = (region) => {
-    var voteRegion = "";
-    var voteObject = {};
-    switch (region) {
-      case "Pergunta":
-        voteRegion = "question";
-        voteObject = questionVotes;
-        break;
-      case "Resposta":
-        voteRegion = "answer";
-        voteObject = answerVotes;
-        break;
-    }
-
-    return { voteRegion, voteObject };
-  };
-
-  const voteRegion = (qa_index, region) => {
-    const { voteRegion, voteObject } = getVoteRegion(region);
-    return (
-      <Box component="fieldset" sx={{ borderRadius: 1, padding: 2, mt: 2 }}>
-        <legend>{region}</legend>
-        <Grid container>
-          {Object.keys(voteObject).map((key, index) => {
-            return (
-              <Grid item sm={12} mt={index > 0 ? 3 : 0}>
-                {voteBox(qa_index, region, key, voteObject[key])}
-              </Grid>
-            );
-          })}
-        </Grid>
-        {/* <Box display="flex" alignItems="center" key={`${qa_index}_${region}`}>
-          {Object.keys(voteObject).map((key, index) => {
-            return voteBox(qa_index, region, key, voteObject[key]);
-          })}
-        </Box> */}
-      </Box>
-    );
-  };
-
-  const updateVotes = (qa_index, voteField, field, newValue) => {
+  const updateEvaluation = (qa_index, eval_key, response) => {
     //atualiza os valores e votos do segundo nível da estrutura de voto
     setQAS((prevItems) =>
       prevItems.map((item, index) =>
@@ -272,10 +269,7 @@ export default function Annotation() {
               ...item,
               vote: {
                 ...item.vote,
-                [voteField]: {
-                  ...item.vote[voteField],
-                  [field]: newValue,
-                },
+                [eval_key]: response,
               },
             }
           : item
@@ -283,21 +277,56 @@ export default function Annotation() {
     );
   };
 
-  const voteBox = (qa_index, region, field, fieldLabel) => {
-    const { voteRegion, voteObject } = getVoteRegion(region);
+  const mapEvaluationRelations = (qa_index, key) => {
+    //fornece a relação atual e mapeia-se as dependências hierarquicas delas
+    switch (key) {
+      case "coherent":
+        return false;
+      case "relevant":
+      case "correct":
+        return !QAS[qa_index].vote.coherent;
+    }
+  };
 
+  const evaluationBox = (qa_index) => {
     return (
-      <Box display="flex" alignItems="center" sx={{ ml: 2 }}>
-        <Typography sx={{ mr: 1 }}>{fieldLabel}: </Typography>
-        <Rating
-          key={`${region}_${field}_vote_${qa_index}`}
-          name={`${region}_${field}_vote_${qa_index}`}
-          value={QAS[qa_index].vote[voteRegion][field]}
-          onChange={(event, newValue) => {
-            updateVotes(qa_index, voteRegion, field, newValue);
-          }}
-        />
-      </Box>
+      <Grid container>
+        {Object.keys(evaluationSteps).map((key, index) => {
+          return (
+            <Grid item sm={12} lg={4} mt={3}>
+              <FormControl display="flex">
+                <FormLabel
+                  id="qa-eval-radio-buttons-group"
+                  sx={{ color: "#000" }}
+                >
+                  {evaluationSteps[key]}
+                </FormLabel>
+                <RadioGroup
+                  row
+                  aria-labelledby="qa-eval-radio-buttons-group"
+                  name={`${key}_evaluation_${qa_index}`}
+                  value={QAS[qa_index].vote[key]}
+                  onChange={(event, newValue) => {
+                    updateEvaluation(qa_index, key, newValue);
+                  }}
+                >
+                  <FormControlLabel
+                    value={true}
+                    control={<Radio />}
+                    label="Sim"
+                    disabled={mapEvaluationRelations(qa_index, key)}
+                  />
+                  <FormControlLabel
+                    value={false}
+                    control={<Radio />}
+                    label="Não"
+                  />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+          );
+        })}
+      </Grid>
     );
   };
 
@@ -312,7 +341,7 @@ export default function Annotation() {
             marginTop: 3,
             backgroundColor: colorPallete[index].replace("0.3", "0.15"),
           }}
-          expanded={expandedAccordion === index}
+          expanded={expandedAccordion === index || viewMode}
         >
           <AccordionSummary
             onClick={() => handleResetQA(index)}
@@ -327,16 +356,17 @@ export default function Annotation() {
           <AccordionDetails>
             <Typography>Pergunta: {element.question}</Typography>
             <Typography>Resposta: {element.answer}</Typography>
-            {voteRegion(index, "Pergunta")}
-            {voteRegion(index, "Resposta")}
+            {!viewMode && (evaluationBox(index))}
 
             <Box sx={{ justifyContent: "space-between" }}>
-              <IconButton
-                sx={{ float: "right" }}
-                onClick={() => confirmQA(index)}
-              >
-                <CheckBoxRounded sx={{ color: "#06b000" }} />
-              </IconButton>
+              {!viewMode && (
+                <IconButton
+                  sx={{ float: "right" }}
+                  onClick={() => confirmQA(index)}
+                >
+                  <CheckBoxRounded sx={{ color: "#06b000" }} />
+                </IconButton>
+              )}
               <IconButton
                 sx={{ float: "right" }}
                 onClick={() => scrollToElement(index)}
@@ -352,10 +382,15 @@ export default function Annotation() {
 
   const validationChecker = (arr) => arr.every((v) => v.validated === true);
 
+  const closeFinishModal = () => {
+    setFinishAnnotation(false);
+    setIsDataLoading(false);
+  };
+
   return (
     <Box pl={3} pr={3} mt={3} mb={3}>
       <SideMenu matchers={{ mobileMatches, tabletMatches, computerMatches }} />
-      <FinishModal open={finishAnnotation} />
+      <FinishModal open={finishAnnotation} closeCallback={closeFinishModal} />
       <LoadBackdrop open={isDataLoading} message={"Carregando Dados"} />
       <InteractionDialog
         open={dialogData.open}
@@ -383,19 +418,24 @@ export default function Annotation() {
                 alignItems="center"
                 justifyContent="center"
               >
-                {Object.keys(reportFile).length > 0 && (
-                  <PdfViewer
-                    filePath={`${process.env.NEXT_PUBLIC_API_HOST}/document/${reportFile.file_id}`}
-                    pageNumber={reportFile.page}
-                    pageWidth={reportFile.page_size.width}
-                    QAS={QAS}
-                    matchers={{ mobileMatches, tabletMatches, computerMatches }}
-                    mobilePositionControl={{
-                      documentPosition,
-                      setDocumentPosition,
-                    }}
-                  />
-                )}
+                {reportFile !== undefined &&
+                  Object.keys(reportFile).length > 0 && (
+                    <PdfViewer
+                      filePath={`${process.env.NEXT_PUBLIC_API_HOST}/document/${reportFile.file_id}`}
+                      pageNumber={reportFile.page}
+                      pageWidth={reportFile.page_size.width}
+                      QAS={QAS}
+                      matchers={{
+                        mobileMatches,
+                        tabletMatches,
+                        computerMatches,
+                      }}
+                      mobilePositionControl={{
+                        documentPosition,
+                        setDocumentPosition,
+                      }}
+                    />
+                  )}
               </Grid>
             </Grid>
           </Paper>
@@ -436,15 +476,17 @@ export default function Annotation() {
           }}
           justifyContent="flex-end"
         >
-          <Button
-            variant="contained"
-            color="success"
-            fullWidth={(mobileMatches || tabletMatches) && !computerMatches}
-            disabled={!validationChecker(QAS)}
-            onClick={saveVotes}
-          >
-            Salvar
-          </Button>
+          {!viewMode && (
+            <Button
+              variant="contained"
+              color="success"
+              fullWidth={(mobileMatches || tabletMatches) && !computerMatches}
+              disabled={!validationChecker(QAS)}
+              onClick={saveEvaluations}
+            >
+              Salvar
+            </Button>
+          )}
         </Grid>
       </Box>
     </Box>

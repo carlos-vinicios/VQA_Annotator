@@ -69,7 +69,7 @@ api.interceptors.response.use((response) => {
       })
     })
   } else if(err.response.status === 422 || err.response.status === 400 || err.response.status === 404) {
-    return err
+    return Promise.reject(err);
   } else {
     signOut()
   }
