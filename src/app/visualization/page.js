@@ -60,7 +60,6 @@ export default function Visualization() {
     evaluationService
       .getFileToVisualize(filename, generationModel)
       .then((data) => {
-        console.log(data);
         setReportFile(data);
         setQAS(
           data.questions.map((element, index) => {

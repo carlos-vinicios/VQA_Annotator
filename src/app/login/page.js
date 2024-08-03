@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Grid,
   Box,
@@ -13,7 +14,6 @@ import {
   Alert,
   Collapse,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
 import authService from "@/services/api/authService";
 import { setAuthDataCookie } from "@/services/auth";
 import { decodeAuthData } from "@/services/jwt";
@@ -27,7 +27,7 @@ export default function Login() {
   useEffect(() => {
     const authData = decodeAuthData("systems");
     if (authData) {
-      router.push("/vote");
+      router.push("/resume");
     }
   }, []);
 

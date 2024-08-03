@@ -13,7 +13,6 @@ import {
   FormControlLabel,
   Radio,
   Button,
-  IconButton,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -25,7 +24,7 @@ import PdfViewer from "@/components/pdfViewer";
 import FinishModal from "@/components/finishModal";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { CheckBoxRounded, ExpandMore, RemoveRedEye } from "@mui/icons-material";
+import { ExpandMore } from "@mui/icons-material";
 import InteractionDialog from "@/components/interactionDialog";
 import LoadBackdrop from "@/components/loadBackdrop";
 import SideMenu from "@/components/sideMenu";
@@ -35,7 +34,6 @@ export default function DocumentView() {
   const router = useRouter();
   const evaluationSteps = {
     coherent: "A pergunta é coerente?",
-    relevant: "A pergunta é relevante?",
     correct: "A resposta está correta?",
   };
 
@@ -47,7 +45,6 @@ export default function DocumentView() {
   const [viewMode, setViewMode] = useState(true);
   const [reportFile, setReportFile] = useState({});
   const [QAS, setQAS] = useState([]);
-  const [expandedAccordion, setExpandedAccordion] = useState(-1);
   const [documentPosition, setDocumentPosition] = useState({
     scale: 1,
     translation: { x: 0, y: 0 },
@@ -60,7 +57,6 @@ export default function DocumentView() {
   });
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [finishAnnotation, setFinishAnnotation] = useState(false);
-  const [strtTime, setStrtTime] = useState(new Date());
   const colorPallete = [
     "rgba(250, 92, 92, 0.3)",
     "rgba(247, 207, 114, 0.3)",
@@ -73,7 +69,6 @@ export default function DocumentView() {
   const getNewPageForEvaluation = () => {
     const elementContainer = document.getElementById("qas-container");
     elementContainer.scrollTop = 0;
-    setExpandedAccordion(0);
 
     evaluationService
       .getNextEvaluationFile()
@@ -86,11 +81,9 @@ export default function DocumentView() {
             let newElementValue = {
               ...element,
               vote: {
-                coherent: false,
-                relevant: false,
-                correct: false,
+                coherent: null,
+                correct: null,
               },
-              validated: false,
               color: colorPallete[index],
             };
             return newElementValue;
@@ -119,18 +112,15 @@ export default function DocumentView() {
             let newElementValue = {
               ...element,
               vote: {
-                coherent: false,
-                relevant: false,
-                correct: false,
+                coherent: null,
+                correct: null,
               },
-              validated: false,
               color: colorPallete[index],
             };
             return newElementValue;
           })
         );
         setIsDataLoading(false);
-        setExpandedAccordion(0);
       })
       .catch((error) => {
         console.log(error);
@@ -151,9 +141,17 @@ export default function DocumentView() {
     setIsDataLoading(true);
     let votes = [];
     for (let i = 0; i < QAS.length; i++) {
+      //transforma os valores dos votos em booleano para adequar ao schema da API
+      Object.keys(QAS[i].vote).forEach((key) => {
+        QAS[i].vote[key] = QAS[i].vote[key] === true;
+      });
       votes.push({ ...QAS[i].vote, model: "human" });
     }
 
+    if (params.file_id !== undefined && params.file_id.includes("ed_"))
+      //interrompe a execução do código em caso de edição
+      return
+    
     evaluationService.saveEvaluations(reportFile.file_id, votes).then(() => {
       getNewPageForEvaluation();
     });
@@ -186,96 +184,23 @@ export default function DocumentView() {
     }
   };
 
-  const nextQAAccordion = (qaIndex) => {
-    //vai abrir a próxima pergunta que deve ser verificada
-    if (qaIndex < QAS.length && !viewMode) {
-      let nextIndex = qaIndex;
-      //vamos buscar pela QA que ainda não foi validada
-      for (let i = nextIndex; i < QAS.length; i++) {
-        const element = QAS[i];
-        if (!element.validated) {
-          break;
-        }
-        nextIndex += 1;
-      }
-      scrollToElement(nextIndex);
-      setExpandedAccordion(nextIndex);
-    }
-  };
-
-  const confirmQA = (qaIndex) => {
-    //vai ser disparado quando a confirmação de questão for chamado
-    var newQAs = QAS.map((qa, i) => {
-      if (i === qaIndex) {
-        qa.validated = true;
-      }
-      return qa;
-    });
-    setQAS(newQAs);
-    nextQAAccordion(qaIndex);
-  };
-
-  const resetQA = (confirmed, qaIndex) => {
-    if (viewMode) return;
-
-    setDialogData({
-      open: false,
-      qaIndex: null,
-      callback: null,
-      messages: {
-        title: "",
-        body: "",
-      },
-    });
-    if (confirmed) {
-      var newQAs = QAS.map((qa, i) => {
-        if (i === qaIndex) {
-          qa.validated = false;
-        }
-        return qa;
-      });
-      setQAS(newQAs);
-      setExpandedAccordion(qaIndex);
-    }
-  };
-
-  const handleResetQA = (qaIndex) => {
-    //vai ser chamado quando uma questão invalidada for clicada novamente e confirmada o popup
-    if (QAS[qaIndex].validated) {
-      const prefixTitle = "Editar";
-
-      setDialogData({
-        open: true,
-        qaIndex: qaIndex,
-        callback: resetQA,
-        messages: {
-          title: `${prefixTitle} pergunta ${qaIndex + 1}`,
-          body: `Tem certeza que deseja ${prefixTitle.toLowerCase()} a votação da pergunta ${
-            qaIndex + 1
-          }?`,
-        },
-      });
-    }
-  };
-
-  const accordionLabel = (elementIndex, element) => {
-    if (expandedAccordion === elementIndex || viewMode) return "";
-    if (element.deleted) return " - Excluída";
-    if (!element.validated) return " - Pendente";
-    else return " - Validada";
-  };
-
   const updateEvaluation = (qa_index, eval_key, response) => {
     //atualiza os valores e votos do segundo nível da estrutura de voto
+    let newVote = {
+      ...QAS[qa_index].vote,
+    };
+    newVote[eval_key] = response === "true";
+
+    //se não for coerente, reseta automaticamente a resposta
+    if (eval_key === "coherent" && !(response === "true"))
+      newVote.correct = null;
+
     setQAS((prevItems) =>
       prevItems.map((item, index) =>
         index === qa_index
           ? {
               ...item,
-              vote: {
-                ...item.vote,
-                [eval_key]: response,
-              },
+              vote: newVote,
             }
           : item
       )
@@ -297,39 +222,43 @@ export default function DocumentView() {
     return (
       <Grid container>
         {Object.keys(evaluationSteps).map((key, index) => {
-          return (
-            <Grid item sm={12} lg={4} mt={3}>
-              <FormControl display="flex">
-                <FormLabel
-                  id="qa-eval-radio-buttons-group"
-                  sx={{ color: "#000" }}
-                >
-                  {evaluationSteps[key]}
-                </FormLabel>
-                <RadioGroup
-                  row
-                  aria-labelledby="qa-eval-radio-buttons-group"
-                  name={`${key}_evaluation_${qa_index}`}
-                  value={QAS[qa_index].vote[key]}
-                  onChange={(event, newValue) => {
-                    updateEvaluation(qa_index, key, newValue);
-                  }}
-                >
-                  <FormControlLabel
-                    value={true}
-                    control={<Radio />}
-                    label="Sim"
-                    disabled={mapEvaluationRelations(qa_index, key)}
-                  />
-                  <FormControlLabel
-                    value={false}
-                    control={<Radio />}
-                    label="Não"
-                  />
-                </RadioGroup>
-              </FormControl>
-            </Grid>
-          );
+          let lastKey = null;
+          if (index > 0) lastKey = Object.keys(evaluationSteps)[index - 1];
+          if (index > 0 && !QAS[qa_index].vote[lastKey]) return <></>;
+          else
+            return (
+              <Grid item sm={12} lg={4} mt={3}>
+                <FormControl display="flex">
+                  <FormLabel
+                    id="qa-eval-radio-buttons-group"
+                    sx={{ color: "#000" }}
+                  >
+                    {evaluationSteps[key]}
+                  </FormLabel>
+                  <RadioGroup
+                    row
+                    aria-labelledby="qa-eval-radio-buttons-group"
+                    name={`${key}_evaluation_${qa_index}`}
+                    value={QAS[qa_index].vote[key]}
+                    onChange={(event, newValue) => {
+                      updateEvaluation(qa_index, key, newValue);
+                    }}
+                  >
+                    <FormControlLabel
+                      value={true}
+                      control={<Radio />}
+                      label="Sim"
+                      disabled={mapEvaluationRelations(qa_index, key)}
+                    />
+                    <FormControlLabel
+                      value={false}
+                      control={<Radio />}
+                      label="Não"
+                    />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+            );
         })}
       </Grid>
     );
@@ -346,46 +275,39 @@ export default function DocumentView() {
             marginTop: 3,
             backgroundColor: colorPallete[index].replace("0.3", "0.15"),
           }}
-          expanded={expandedAccordion === index || viewMode}
         >
           <AccordionSummary
-            onClick={() => handleResetQA(index)}
             expandIcon={<ExpandMore />}
             aria-controls={`question-answer-${index}`}
             id={`question-answer-${index}`}
           >
             <Typography>
-              Pergunta e Resposta {index + 1} {accordionLabel(index, element)}
+              Pergunta e Resposta {index + 1}
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Typography>Pergunta: {element.question}</Typography>
-            <Typography>Resposta: {element.answer}</Typography>
-            {!viewMode && evaluationBox(index)}
-
-            <Box sx={{ justifyContent: "space-between" }}>
-              {!viewMode && (
-                <IconButton
-                  sx={{ float: "right" }}
-                  onClick={() => confirmQA(index)}
-                >
-                  <CheckBoxRounded sx={{ color: "#06b000" }} />
-                </IconButton>
-              )}
-              <IconButton
-                sx={{ float: "right" }}
-                onClick={() => scrollToElement(index)}
-              >
-                <RemoveRedEye />
-              </IconButton>
+            <Box display="flex" sx={{ mt: 2 }} alignItems="center">
+              <Typography>Resposta: {element.answer}</Typography>
+              <Button onClick={() => scrollToElement(index)} sx={{ ml: 2 }}>
+                Ver resposta
+              </Button>
             </Box>
+            {!viewMode && evaluationBox(index)}
           </AccordionDetails>
         </Accordion>
       );
     });
   };
 
-  const validationChecker = (arr) => arr.every((v) => v.validated === true);
+  const validationChecker = (questions) => {
+    return questions.every(
+      (question) =>
+        question.vote.coherent !== null &&
+        ((question.vote.coherent === true && question.vote.correct !== null) ||
+          (question.vote.coherent === false && question.vote.correct === null))
+    );
+  };
 
   const closeFinishModal = () => {
     setFinishAnnotation(false);
@@ -487,7 +409,7 @@ export default function DocumentView() {
             onClick={backToResume}
             sx={{
               mr: (mobileMatches || tabletMatches) && !computerMatches ? 0 : 4,
-              mb: (mobileMatches || tabletMatches) && !computerMatches ? 4 : 0
+              mb: (mobileMatches || tabletMatches) && !computerMatches ? 4 : 0,
             }}
           >
             Voltar
