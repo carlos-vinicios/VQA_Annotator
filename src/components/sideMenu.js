@@ -21,7 +21,13 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import LogoutIcon from "@mui/icons-material/Logout";
 import EditNoteIcon from "@mui/icons-material/EditNote";
-import FindInPageIcon from "@mui/icons-material/FindInPage";
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import {
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Button,
+} from "@mui/material";
 
 const drawerWidth = 240;
 
@@ -90,11 +96,42 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
+const InfoDialog = ({ open, handleClose, url }) => {
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
+      <DialogContent>
+        <iframe
+          src={url}
+          width="100%"
+          height="550px"
+          style={{ border: "none" }}
+          title="Informações"
+        ></iframe>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose} color="primary">
+          Fechar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 export default function SideMenu({ matchers }) {
   const { mobileMatches, tabletMatches, computerMatches } = matchers;
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
-  const router = useRouter()
+  const router = useRouter();
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const url = "/manual"; // Substitua pelo URL desejado
+
+  const handleDialogOpen = () => {
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+  };
 
   const goToAnnotation = () => {
     //caso tenha mais de um página no futuro, colocar o controle aqui
@@ -102,20 +139,15 @@ export default function SideMenu({ matchers }) {
     return;
   };
 
-  const goToVisualization = () => {
-    //caso tenha mais de um página no futuro, colocar o controle aqui
-    router.push("/visualization");
-    return;
-  };
-
   const handleSingOut = () => {
     //remove os cookies de sessão e redireciona para o login
     signOut();
-    router.push("/login")
+    router.push("/login");
   };
 
   const options = [
     { text: "Avaliação", icon: <EditNoteIcon />, action: goToAnnotation },
+    { text: "Manual", icon: <QuestionMarkIcon />, action: handleDialogOpen },
     { text: "Sair", icon: <LogoutIcon />, action: handleSingOut },
   ];
 
@@ -200,6 +232,7 @@ export default function SideMenu({ matchers }) {
           ))}
         </List>
       </Drawer>
+      <InfoDialog open={dialogOpen} handleClose={handleDialogClose} url={url} />
     </>
   );
 }
