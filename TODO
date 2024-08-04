@@ -1,2 +1,0 @@
-- proteger as rotas do backend com autenticação
-- verificar a consistência da concorrência de acesso aos documentos para marcação e perguntas para validação

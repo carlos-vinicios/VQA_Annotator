@@ -5,206 +5,100 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Document, Page } from "react-pdf";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import {
-  Box,
-  FormControlLabel,
-  Checkbox,
-  IconButton,
-  Typography,
-  Button,
-} from "@mui/material";
-import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
+import { Box } from "@mui/material";
+import { MapInteractionCSS } from "react-map-interaction";
 
 export default function PdfViewer({
   filePath,
-  onChangePage,
-  pagesMetadata,
-  sendMetadata,
+  pageNumber,
+  pageWidth,
+  QAS,
+  matchers,
+  mobilePositionControl
 }) {
-  const theme = useTheme();
-  const mobileMatches = useMediaQuery(theme.breakpoints.up("xs"));
-  const tabletMatches = useMediaQuery(theme.breakpoints.up("sm"));
-  const computerMatches = useMediaQuery(theme.breakpoints.up("lg"));
-
-  const [numPages, setNumPages] = useState();
-  const [pageNumber, setPageNumber] = useState(1);
-
-  //estados de controle dos checkbox
-  const [text, setText] = useState(true);
-  const [image, setImage] = useState(false);
-  const [form, setForm] = useState(false);
-  const [table, setTable] = useState(false);
-
-  useEffect(() => {
-    if (pageNumber <= pagesMetadata.length) {
-      const pageMetadata = pagesMetadata[pageNumber - 1];
-      setText(pageMetadata.text);
-      setImage(pageMetadata.image);
-      setForm(pageMetadata.form);
-      setTable(pageMetadata.table);
-    }
-  }, [pageNumber]);
-
-  const keyDownEvent = (event) => {
-    if (event.code === "ArrowRight") {
-      nextPage();
-    }
-    if (event.code === "ArrowLeft") {
-      previousPage();
-    }
-    if(event.code === "Digit1"){
-      setText(prev => !prev)
-    }
-    if(event.code === "Digit2"){
-      setTable(prev => !prev)
-    }
-    if(event.code === "Digit3"){
-      setForm(prev => !prev)
-    }
-    if(event.code === "Digit4"){
-      setImage(prev => !prev)
-    }
-  };
-
-  const handleChangeCheckbox = (event, dataType) => {
-    if (dataType === "text") {
-      setText(event.target.checked);
-    } else if (dataType === "image") {
-      setImage(event.target.checked);
-    } else if (dataType === "form") {
-      setForm(event.target.checked);
-    } else if (dataType === "table") {
-      setTable(event.target.checked);
-    }
-  };
-
-  function onDocumentLoadSuccess({ numPages }) {
-    setNumPages(numPages);
-  }
-
-  function changePage(offset) {
-    onChangePage(pageNumber, { text, image, form, table });
-    setPageNumber((prevPageNumber) => prevPageNumber + offset);
-    //resetando para o default
-    setText(true);
-    setImage(false);
-    setForm(false);
-    setTable(false);
-  }
-
-  function previousPage() {
-    if (pageNumber === 1) return;
-    changePage(-1);
-  }
-
-  function nextPage() {
-    if (pageNumber === numPages) return;
-    changePage(1);
-  }
+  const { mobileMatches, tabletMatches, computerMatches } = matchers;
+  const [boxesElements, setBoxesElements] = useState([]);
+  const BoxRef = useRef(null);
+  const {documentPosition, setDocumentPosition } = mobilePositionControl;
 
   function pdfViewSize() {
-    if (computerMatches) {
-      return 550;
-    } else if (tabletMatches) {
-      return 680;
-    } else if (mobileMatches) return 320;
+    if (mobileMatches && !tabletMatches && !computerMatches) return 350;
+    if (mobileMatches && tabletMatches && !computerMatches) return 660;
+    return pageWidth;
   }
 
-  function finishSelection() {
-    sendMetadata({ text, image, form, table });
+  function createQABoxes(boxes, pageBox) {
+    if (BoxRef.current) {
+      setBoxesElements(
+        boxes.map((element, index) => {
+          let w = pageBox.width * element[2];
+          let h = pageBox.height * element[3];
+          let x = pageBox.width * element[0] + BoxRef.current.offsetLeft;
+          let y = pageBox.height * element[1] + BoxRef.current.offsetTop;
+          return (
+            <Box
+              id={`BB_${index}`}
+              key={index}
+              sx={{
+                position: "absolute",
+                top: y,
+                left: x,
+                backgroundColor: element.color,
+                width: w,
+                height: h,
+                zIndex: 8,
+              }}
+            />
+          );
+        })
+      );
+    }
   }
-  
-  return (
-    <div tabIndex={0} onKeyDown={keyDownEvent} style={{outline: "none"}}>
-      <Box sx={{ minHeight: { xs: "65vh", sm: "80vh", lg: "85vh" } }}>
-        <Document
-          file={filePath}
-          onLoadSuccess={onDocumentLoadSuccess}
-          sx={{ width: "100%" }}
-        >
+
+  function onPageLoadSuccess(props) {
+    var boxes = [];
+    QAS.forEach((element) => {
+      element.answer_bboxes.forEach((box) => {
+        box.color = element.color;
+        boxes.push(box);
+      });
+    });
+    createQABoxes(boxes, props);
+  }
+
+  function boxContainer() {
+    return (
+      <Box ref={BoxRef}>
+        <Document file={filePath}>
           <Page
-            width={pdfViewSize()}
+            width={pageWidth}
             pageNumber={pageNumber}
             renderTextLayer={false}
             renderAnnotationLayer={false}
+            onLoadSuccess={onPageLoadSuccess}
           />
         </Document>
+        {boxesElements}
       </Box>
-      <Box
-        sx={{
-          position: "relative",
-          bottom: 50,
-          borderRadius: 2,
-          boxShadow: 2,
-          backgroundColor: "#FFF",
-          textAlign: "center",
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={text}
-              onChange={(event) => handleChangeCheckbox(event, "text")}
-            />
-          }
-          label="Texto"
-        />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={table}
-              onChange={(event) => handleChangeCheckbox(event, "table")}
-            />
-          }
-          label="Tabela"
-        />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={form}
-              onChange={(event) => handleChangeCheckbox(event, "form")}
-            />
-          }
-          label="Formulário"
-        />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={image}
-              onChange={(event) => handleChangeCheckbox(event, "image")}
-            />
-          }
-          label="Imagem"
-        />
-        <Box>
-          <IconButton aria-label="previous-page" onClick={previousPage}>
-            <ArrowBackIos />
-          </IconButton>
-          <Typography sx={{ display: "inline-block" }}>
-            {pageNumber} | {numPages}
-          </Typography>
-          <IconButton aria-label="next-page" onClick={nextPage}>
-            <ArrowForwardIos />
-          </IconButton>
-        </Box>
-        <Box>
-          <Button
-            sx={{
-              mt: 2,
-              mb: 2,
-              display: pageNumber === numPages ? "flex-block" : "none",
-            }}
-            variant="contained"
-            onClick={finishSelection}
-          >
-            Concluir
-          </Button>
-        </Box>
-      </Box>
-    </div>
-  );
+    );
+  }
+
+  function pdfViewMode() {
+    if ((mobileMatches || tabletMatches) && !computerMatches) {
+      return (
+        <MapInteractionCSS
+          value={documentPosition}
+          onChange={(value) => setDocumentPosition(value)}
+        >
+          {boxContainer()}
+        </MapInteractionCSS>
+      );
+    }
+
+    return boxContainer();
+  }
+
+  return <Box sx={{ maxWidth: pdfViewSize(), width: pageWidth, marginBottom: '50vh' }}>{pdfViewMode()}</Box>;
 }

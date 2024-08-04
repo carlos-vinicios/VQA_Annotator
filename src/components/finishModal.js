@@ -1,9 +1,10 @@
+import { Button, DialogActions } from '@mui/material';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 
-export default function FinishModal({open}) {
+export default function FinishModal({open, closeCallback}) {
   return (
     <div>
       <Dialog
@@ -16,10 +17,15 @@ export default function FinishModal({open}) {
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Não temos mais nenhum arquivo para anotar.<br></br>
-            Muito obrigado por sua ajuda.
+            Acabaram todas as páginas para anotação.<br></br>
+            Muito obrigado por sua ajuda ❤️.
           </DialogContentText>
         </DialogContent>
+        <DialogActions>
+          <Button autoFocus onClick={closeCallback}>
+            Fechar
+          </Button>
+        </DialogActions>
       </Dialog>
     </div>
   );

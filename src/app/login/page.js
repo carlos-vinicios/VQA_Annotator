@@ -1,7 +1,7 @@
 "use client";
 
-import { signIn } from "next-auth/react"
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Grid,
   Box,
@@ -12,28 +12,37 @@ import {
   Input,
   Typography,
   Alert,
-  AlertTitle,
   Collapse,
 } from "@mui/material";
-import { useRouter } from 'next/navigation';
+import authService from "@/services/api/authService";
+import { setAuthDataCookie } from "@/services/auth";
+import { decodeAuthData } from "@/services/jwt";
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(false);
 
-  const handleLogin =  async () => {
-    const loginData = {email: email, token: token}
-    const res = await signIn('credentials', {
-      ...loginData,
-      redirect: false,
-    });
-    if(!res.error){
-      router.push("/");
-    }else{
-      setLoginError(true)
+  useEffect(() => {
+    const authData = decodeAuthData("systems");
+    if (authData) {
+      router.push("/resume");
     }
+  }, []);
+
+  const handleLogin = () => {
+    const loginData = { username, password };
+    authService
+      .login(loginData)
+      .then((authData) => {
+        setAuthDataCookie(authData);
+        router.push("/evaluation");
+      })
+      .catch((err) => {
+        console.log("Erro no login:", err);
+        setLoginError(true);
+      });
   };
 
   return (
@@ -41,53 +50,65 @@ export default function Login() {
       <Grid container spacing={4} alignItems="center" justifyContent="center">
         <Grid item sm={8} lg={4}>
           <Paper elevation={2} sx={{ padding: 3 }}>
-            <Grid
-              container
-              spacing={2}
-              alignItems="center"
-              justifyContent="center"
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleLogin();
+              }}
             >
-              <Grid item xs={12} sm={12} lg={12}>
-                <Typography variant="h4" sx={{ textAlign: "center" }}>
-                  VQA Annotator
-                </Typography>
+              <Grid
+                container
+                spacing={2}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Grid item xs={12} sm={12} lg={12}>
+                  <Typography variant="h4" sx={{ textAlign: "center" }}>
+                    VQA Annotator
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={12} lg={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Username</InputLabel>
+                    <Input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={12} lg={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Senha</InputLabel>
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={12} lg={12}>
+                  <Box sx={{ textAlign: "center" }}>
+                    <Button
+                      onClick={handleLogin}
+                      variant="contained"
+                      type="submit"
+                    >
+                      Entrar
+                    </Button>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={12} lg={12}>
+                  <Collapse in={loginError}>
+                    <Alert
+                      onClose={() => setLoginError(false)}
+                      severity="error"
+                    >
+                      Email ou token estão incorretos.
+                    </Alert>
+                  </Collapse>
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={12} lg={12}>
-                <FormControl fullWidth>
-                  <InputLabel>Email</InputLabel>
-                  <Input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={12} lg={12}>
-                <FormControl fullWidth>
-                  <InputLabel>Token</InputLabel>
-                  <Input
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                  />
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={12} lg={12}>
-                <Box sx={{ textAlign: "center" }}>
-                  <Button onClick={handleLogin} variant="contained">
-                    Entrar
-                  </Button>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={12} lg={12}>
-                <Collapse in={loginError}>
-                  <Alert 
-                    onClose={() => setLoginError(false)}
-                    severity="error" 
-                  >
-                    Email ou token estão incorretos.            
-                  </Alert>
-                </Collapse>
-              </Grid>
-            </Grid>
+            </form>
           </Paper>
         </Grid>
       </Grid>

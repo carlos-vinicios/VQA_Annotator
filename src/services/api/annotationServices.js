@@ -1,16 +1,12 @@
-import axios from 'axios';
+import { api } from "@services/api";
 
 const apiServices = {
-    getNextFile: async () => {
-        const { data } = await axios.get(`/api/page/annotation`);
-        return data;
-    },
-    saveTime: async (time) => {
-        const { data } = await axios.post(`/api/annotation/time`, time);
+    getNextFile: async (user) => {
+        const { data } = await api.get(`/api/annotation/page/${user}`);
         return data;
     },
     saveAnnotations: async (annotation) => {
-        const { data } = await axios.post(`/api/question`, annotation);
+        const { data } = await api.post(`/api/annotation`, annotation);
         return data;
     }
 }

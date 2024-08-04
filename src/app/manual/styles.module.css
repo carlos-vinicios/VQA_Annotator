@@ -1,0 +1,10 @@
+.list_container {
+    margin-top: 10px;
+    margin-left: 40px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.text_bold {
+    font-weight: bold;
+}

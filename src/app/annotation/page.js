@@ -1,153 +1,366 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { Button, Grid, TextField, Box, Typography, Paper } from "@mui/material";
-import QuestionList from "@/components/questionsList";
+import {
+  Grid,
+  Box,
+  Paper,
+  TextField,
+  Button,
+  IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Typography,
+} from "@mui/material";
 import annotationServices from "@/services/api/annotationServices";
+import PdfViewer from "@/components/pdfViewer";
 import FinishModal from "@/components/finishModal";
-import { redirect } from "next/navigation";
-import FloatAlert from "@/components/floatAlert";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import {
+  CheckBoxRounded,
+  Delete,
+  ExpandMore,
+  RemoveRedEye,
+} from "@mui/icons-material";
+import InteractionDialog from "@/components/interactionDialog";
 import LoadBackdrop from "@/components/loadBackdrop";
+import SideMenu from "@/components/sideMenu";
 
 export default function Annotation() {
   const { data: session, status } = useSession();
-  const questionInputRef = useRef();
 
-  const [loadBackdropOpen, setLoadBackdropOpen] = useState(true);
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [alertInfo, setAlertInfo] = useState({
-    message: "",
-    severity: "success",
-  });
+  const theme = useTheme();
+  const mobileMatches = useMediaQuery(theme.breakpoints.up("xs"));
+  const tabletMatches = useMediaQuery(theme.breakpoints.up("sm"));
+  const computerMatches = useMediaQuery(theme.breakpoints.up("lg"));
 
-  const [question, setQuestion] = useState("");
-  const [response, setResponse] = useState("");
-  const [questions, setQuestions] = useState([]);
-
-  const [finishAnnotation, setFinishAnnotation] = useState(false);
   const [reportFile, setReportFile] = useState({});
+  const [QAS, setQAS] = useState([]);
+  const [expandedAccordion, setExpandedAccordion] = useState(-1);
+  const [documentPosition, setDocumentPosition] = useState({
+    scale: 1,
+    translation: { x: 0, y: 0 },
+  });
+  const [dialogData, setDialogData] = useState({
+    open: false,
+    qaIndex: null,
+    callback: null,
+    messages: { title: "", body: "" },
+  });
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [finishAnnotation, setFinishAnnotation] = useState(false);
+  const [strtTime, setStrtTime] = useState(new Date());
+  const colorPallete = [
+    "rgba(250, 92, 92, 0.3)",
+    "rgba(247, 207, 114, 0.3)",
+    "rgba(51, 110, 131, 0.3)",
+    "rgba(169, 187, 51, 0.3)",
+    "rgba(160, 23, 138, 0.3)",
+    "rgba(5, 245, 237, 0.3)",
+  ];
 
-  //calculo de tempo
-  const [startTime, setStartTime] = useState();
+  const getNewPageForAnnotation = () => {
+    if (session) {
+      const elementContainer = document.getElementById("qas-container");
+      elementContainer.scrollTop = 0;
+      setExpandedAccordion(0);
 
-  useEffect(() => {
-    //caso não esteja logado, volta para autenticação
-    if (status === "unauthenticated") {
-      redirect("/login");
-    }else{ //verifica se o usuário está no estágio correto
-      if (session.user.stage !== 'annotation'){
-        redirect(`/${session.user.stage}`);
-      }
-    }
-  }, [status]);
-
-  useEffect(() => {
-    if (Object.keys(reportFile).length === 0) {
-      setLoadBackdropOpen(true);
-      annotationServices.getNextFile().then((data) => {
-        if (typeof data === "string") {
+      annotationServices.getNextFile(session.user.token).then((data) => {
+        if (Object.keys(data).length === 0 || typeof data === "string") {
           setFinishAnnotation(true);
           return;
-        } else {
-          setReportFile(data);
-          setStartTime(new Date());
         }
-        setLoadBackdropOpen(false);
+        setStrtTime(new Date());
+        setReportFile(data);
+        setQAS(
+          data.qas.map((element, index) => {
+            let newElementValue = {
+              question: element.model_question,
+              answer: element.model_answer,
+              boxes: [
+                ...JSON.parse(JSON.stringify(element.questions_boxes)),
+                ...JSON.parse(JSON.stringify(element.answer_boxes)),
+              ],
+              color: colorPallete[index],
+              validated: false,
+              deleted: false,
+            };
+            return newElementValue;
+          })
+        );
+        setIsDataLoading(false);
       });
     }
-  }, [reportFile]);
-
-  const addQuestionAnwser = () => {
-    if (question.length > 0 && response.length > 0) {
-      if (questions.filter((qa, _) => qa.question === question).length > 0) {
-        setAlertInfo({
-          message: "Essa pergunta já foi adicionada",
-          severity: "warning",
-        });
-        setAlertOpen(true);
-        return;
-      }
-
-      setQuestions((prev) => [
-        ...prev,
-        {
-          question,
-          response,
-        },
-      ]);
-      setQuestion("");
-      setResponse("");
-      questionInputRef.current.focus();
-    }
   };
 
-  const deleteQuestionAnwser = (index) => {
-    setQuestions(questions.filter((_, i) => i !== index));
-  };
+  useEffect(() => {
+    getNewPageForAnnotation();
+  }, [status]);
 
   const saveAnnotations = () => {
-    if (questions.length > 0) {
-      let elapsedTime = new Date() - startTime;
-      const timeObj = {
-        pageId: reportFile.id,
-        annotator: session.user.email,
-        elapsedTime,
-      };
-      const questionObj = {
-        pageId: reportFile.id,
-        questions,
-      };
+    //aqui só vou enviar os dados para a rota de registro de anotação do backend
+    setIsDataLoading(true);
+    let newQAs = [];
+    for (let i = 0; i < QAS.length; i++) {
+      const user_element = QAS[i];
+      const model_element = reportFile.qas[i];
+      newQAs.push({
+        ...model_element,
+        user_question: user_element.question,
+        user_answer: user_element.answer,
+        validated: user_element.validated,
+        deleted: user_element.deleted,
+      });
+    }
 
-      annotationServices.saveAnnotations(questionObj).then(() => {
-        annotationServices.saveTime(timeObj).then(() => {
-          setAlertInfo({
-            message: "Anotaçães salvas com sucesso",
-            severity: "success",
-          });
-          setAlertOpen(true);
-          //resetando o estado
-          setReportFile({});
-          setStartTime(null);
-          setQuestion("");
-          setResponse("");
-          setQuestions([]);
+    annotationServices
+      .saveAnnotations({
+        ...reportFile,
+        elapsedTime: new Date() - strtTime,
+        qas: newQAs,
+        annotated: true,
+      })
+      .then(() => {
+        getNewPageForAnnotation();
+      });
+  };
+
+  const scrollToElement = (index) => {
+    if (index >= QAS.length) return;
+
+    let box = QAS[index].boxes[0];
+    let boxY = box.y;
+    let boxX = box.x;
+    let coordY = boxY * reportFile.dimension.height - 50;
+    let coordX = boxX * reportFile.dimension.width - 50;
+    if ((mobileMatches || tabletMatches) && !computerMatches) {
+      setDocumentPosition({
+        scale: 1,
+        translation: { x: -coordX, y: -coordY },
+      });
+    } else {
+      const element = document.getElementById(`BB_${index}`);
+      if (element) {
+        window.scrollTo({
+          top: coordY,
+          left: 0,
+          behavior: "smooth",
         });
+      }
+    }
+  };
+
+  const nextQAAccordion = (qaIndex) => {
+    //vai abrir a próxima pergunta que deve ser verificada
+    if (qaIndex < QAS.length) {
+      let nextIndex = qaIndex;
+      //vamos buscar pela QA que ainda não foi validada
+      for (let i = nextIndex; i < QAS.length; i++) {
+        const element = QAS[i];
+        if (!element.validated) {
+          break;
+        }
+        nextIndex += 1;
+      }
+      scrollToElement(nextIndex);
+      setExpandedAccordion(nextIndex);
+    }
+  };
+
+  const confirmQA = (qaIndex) => {
+    //vai ser disparado quando a confirmação de questão for chamado
+    var newQAs = QAS.map((qa, i) => {
+      if (i === qaIndex) {
+        qa.validated = true;
+      }
+      return qa;
+    });
+    setQAS(newQAs);
+    nextQAAccordion(qaIndex);
+  };
+
+  const deleteQA = (confirmed, qaIndex) => {
+    //vai ser disparado quando a deleção de questão for chamada
+    setDialogData({
+      open: false,
+      qaIndex: null,
+      callback: null,
+      messages: {
+        title: "",
+        body: "",
+      },
+    });
+    if (confirmed) {
+      var newQAs = QAS.map((qa, i) => {
+        if (i === qaIndex) {
+          qa.validated = true;
+          qa.deleted = true;
+        }
+        return qa;
+      });
+      setQAS(newQAs);
+      nextQAAccordion(qaIndex);
+    }
+  };
+
+  const handleDeleteQA = (qaIndex) => {
+    setDialogData({
+      open: true,
+      qaIndex: qaIndex,
+      callback: deleteQA,
+      messages: {
+        title: `Excluir pergunta ${qaIndex + 1}`,
+        body: `Tem certeza que deseja excluir a pergunta ${qaIndex + 1}?`,
+      },
+    });
+  };
+
+  const resetQA = (confirmed, qaIndex) => {
+    setDialogData({
+      open: false,
+      qaIndex: null,
+      callback: null,
+      messages: {
+        title: "",
+        body: "",
+      },
+    });
+    if (confirmed) {
+      var newQAs = QAS.map((qa, i) => {
+        if (i === qaIndex) {
+          qa.validated = false;
+          qa.deleted = false;
+        }
+        return qa;
+      });
+      setQAS(newQAs);
+      setExpandedAccordion(qaIndex);
+    }
+  };
+
+  const handleResetQA = (qaIndex) => {
+    //vai ser chamado quando uma questão invalidada for clicada novamente e confirmada o popup
+    if (QAS[qaIndex].deleted || QAS[qaIndex].validated) {
+      let prefixTitle = "";
+      if (QAS[qaIndex].deleted) prefixTitle = "Restaurar";
+      else if (QAS[qaIndex].validated) prefixTitle = "Editar";
+
+      setDialogData({
+        open: true,
+        qaIndex: qaIndex,
+        callback: resetQA,
+        messages: {
+          title: `${prefixTitle} pergunta ${qaIndex + 1}`,
+          body: `Tem certeza que deseja ${prefixTitle.toLowerCase()} a pergunta ${
+            qaIndex + 1
+          }?`,
+        },
       });
     }
   };
 
-  const closeAlert = () => {
-    setAlertOpen(false);
+  const accordionLabel = (elementIndex, element) => {
+    if (expandedAccordion === elementIndex) return "";
+    if (element.deleted) return " - Excluída";
+    if (!element.validated) return " - Pendente";
+    else return " - Validada";
   };
 
-  const closeLoadBackdrop = () => {
-    setLoadBackdropOpen(false);
+  const updateQA = (qaIndex, atrib, value) => {
+    setQAS(
+      QAS.map((element, index) => {
+        if (qaIndex === index) {
+          element[atrib] = value;
+        }
+        return element;
+      })
+    );
   };
 
-  const handleKeyPress = (event) => {
-    if (event.key === "Enter") {
-      addQuestionAnwser();
-    }
+  const generateQAAccordions = () => {
+    return QAS.map((element, index) => {
+      return (
+        <Accordion
+          key={index}
+          sx={{
+            padding:
+              (mobileMatches || tabletMatches) && !computerMatches ? 1 : 3,
+            marginTop: 3,
+            backgroundColor: colorPallete[index].replace("0.3", "0.15"),
+          }}
+          expanded={expandedAccordion === index}
+        >
+          <AccordionSummary
+            onClick={() => handleResetQA(index)}
+            expandIcon={<ExpandMore />}
+            aria-controls={`question-answer-${index}`}
+            id={`question-answer-${index}`}
+          >
+            <Typography>
+              Pergunta e Resposta {index + 1} {accordionLabel(index, element)}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <TextField
+              id={`question-${index}`}
+              fullWidth
+              variant="outlined"
+              label="Pergunta"
+              value={element.question}
+              onChange={(e) => updateQA(index, "question", e.target.value)}
+              sx={{ marginBottom: 3, backgroundColor: "#fafafa" }}
+            />
+            <TextField
+              id={`answer-${index}`}
+              fullWidth
+              variant="outlined"
+              label="Resposta"
+              value={element.answer}
+              onChange={(e) => updateQA(index, "answer", e.target.value)}
+              sx={{ marginBottom: 3, backgroundColor: "#fafafa" }}
+            />
+            <Box sx={{ justifyContent: "space-between" }}>
+              <IconButton onClick={() => handleDeleteQA(index)}>
+                <Delete sx={{ color: "#b00000" }} />
+              </IconButton>
+              <IconButton
+                sx={{ float: "right" }}
+                onClick={() => confirmQA(index)}
+              >
+                <CheckBoxRounded sx={{ color: "#06b000" }} />
+              </IconButton>
+              <IconButton
+                sx={{ float: "right" }}
+                onClick={() => scrollToElement(index)}
+              >
+                <RemoveRedEye />
+              </IconButton>
+            </Box>
+          </AccordionDetails>
+        </Accordion>
+      );
+    });
   };
+
+  const validationChecker = (arr) => arr.every((v) => v.validated === true);
 
   return (
     <Box pl={3} pr={3} mt={3} mb={3}>
+      <SideMenu matchers={{ mobileMatches, tabletMatches, computerMatches }} />
       <FinishModal open={finishAnnotation} />
-      <FloatAlert
-        open={alertOpen}
-        closeCallback={closeAlert}
-        message={alertInfo.message}
-        severity={alertInfo.severity}
-      />
-      <LoadBackdrop
-        open={loadBackdropOpen}
-        handleClose={closeLoadBackdrop}
-        message="Carregando Arquivo"
+      <LoadBackdrop open={isDataLoading} message={"Carregando Dados"} />
+      <InteractionDialog
+        open={dialogData.open}
+        index={dialogData.qaIndex}
+        messages={dialogData.messages}
+        closeCallback={dialogData.callback}
       />
       <Grid container spacing={4} alignItems="center" justifyContent="center">
-        <Grid item sm={12} lg={8}>
-          <Paper elevation={2} sx={{ paddingBottom: 3 }}>
+        <Grid item sm={12} lg={10}>
+          <Paper elevation={2} sx={{ paddingBottom: 3, mt: 10 }}>
             <Grid
               container
               spacing={2}
@@ -156,90 +369,79 @@ export default function Annotation() {
               alignItems="center"
               justifyContent="center"
             >
-              <Grid item xs={12} sm={12} lg={12}>
+              <Grid
+                item
+                container
+                xs={12}
+                sm={12}
+                lg={12}
+                alignItems="center"
+                justifyContent="center"
+              >
                 {Object.keys(reportFile).length > 0 && (
-                  <embed
-                    style={{
-                      width: "100%",
-                      height: "90vh",
+                  <PdfViewer
+                    filePath={`${process.env.NEXT_PUBLIC_REPORT_ENDPOINT}/${reportFile.ticker}/${reportFile.filename}`}
+                    pageNumber={reportFile.page}
+                    pageWidth={reportFile.dimension.width}
+                    QAS={QAS}
+                    matchers={{ mobileMatches, tabletMatches, computerMatches }}
+                    mobilePositionControl={{
+                      documentPosition,
+                      setDocumentPosition,
                     }}
-                    src={`${process.env.NEXT_PUBLIC_PAGE_ENDPOINT}/${reportFile.filename}`}
                   />
                 )}
-                {Object.keys(reportFile).length === 0 && (
-                  <Paper
-                    style={{
-                      width: "100%",
-                      height: "90vh",
-                      backgroundColor: "#c9c9c9",
-                    }}
-                    elevation={2}
-                  ></Paper>
-                )}
-              </Grid>
-              <Grid item xs={12} sm={12} lg={12}>
-                <TextField
-                  id="question"
-                  inputRef={questionInputRef}
-                  fullWidth
-                  variant="outlined"
-                  label="Sua pergunta..."
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  autoFocus
-                />
-              </Grid>
-              <Grid item xs={12} sm={12} lg={12}>
-                <TextField
-                  id="response"
-                  disabled={question.length === 0}
-                  fullWidth
-                  variant="outlined"
-                  label="Sua resposta..."
-                  value={response}
-                  onChange={(e) => setResponse(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4} lg={5}>
-                <Button
-                  disabled={question.length === 0 || response.length === 0}
-                  variant="contained"
-                  fullWidth
-                  onClick={addQuestionAnwser}
-                >
-                  Adicionar
-                </Button>
               </Grid>
             </Grid>
           </Paper>
-        </Grid>
-        <Grid item xs={12} sm={12} lg={8}>
-          <Paper elevation={2}>
-            <Grid container spacing={2} pl={3} pr={3}>
-              <Grid item xs={12}>
-                <Typography variant="h4">Perguntas Feitas</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <QuestionList
-                  questions={questions}
-                  deleteQuestionAnwser={deleteQuestionAnwser}
-                />
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={4} lg={5} alignItems="center">
-          <Button
-            disabled={questions.length < 1}
-            variant="contained"
-            fullWidth
-            onClick={saveAnnotations}
-          >
-            Concluir Anotação
-          </Button>
         </Grid>
       </Grid>
+      <Box
+        id="qas-container"
+        elevation={3}
+        sx={{
+          backgroundColor: "#FAFAFA",
+          position: "fixed",
+          minWidth: "100%",
+          height: "46vh",
+          overflowY: "scroll",
+          overflowX: "hidden",
+          bottom: 0,
+          left: 0,
+          padding: 3,
+          pl: (mobileMatches || tabletMatches) && !computerMatches ? 3 : 10,
+          zIndex: 9,
+          boxShadow: 3,
+        }}
+      >
+        <Typography
+          variant={
+            (mobileMatches || tabletMatches) && !computerMatches ? "h5" : "h4"
+          }
+          sx={{ textAlign: "center", mb: 3 }}
+        >
+          Perguntas e Respostas
+        </Typography>
+        {generateQAAccordions()}
+        <Grid
+          container
+          sx={{
+            width: "100%",
+            mt: 5,
+          }}
+          justifyContent="flex-end"
+        >
+          <Button
+            variant="contained"
+            color="success"
+            fullWidth={(mobileMatches || tabletMatches) && !computerMatches}
+            disabled={!validationChecker(QAS)}
+            onClick={saveAnnotations}
+          >
+            Salvar
+          </Button>
+        </Grid>
+      </Box>
     </Box>
   );
 }

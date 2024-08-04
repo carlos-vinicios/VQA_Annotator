@@ -22,3 +22,11 @@ npm run dev
 ```
 
 Abra [http://localhost:3000](http://localhost:3000) para verificar a página de anotação.
+
+### Inicialização do ORM
+
+Para realizar a comunicação com a base de dados, é necessário gerar a interface de comunicação por meio do Prisma:
+
+```bash
+npx prisma generate
+```
