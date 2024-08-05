@@ -73,7 +73,6 @@ export default function DocumentView() {
     evaluationService
       .getNextEvaluationFile()
       .then((data) => {
-        setStrtTime(new Date());
         setViewMode(false);
         setReportFile(data);
         setQAS(
@@ -92,6 +91,7 @@ export default function DocumentView() {
         setIsDataLoading(false);
       })
       .catch((error) => {
+        console.log(error)
         if (error.response.status === 404) {
           setFinishAnnotation(true);
           return;

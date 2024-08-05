@@ -235,10 +235,18 @@ export default function Manual() {
         Cada pergunta e resposta pode ser expandida para mostrar o seu conteúdo.
         Além do conteúdo, ela apresenta um botão{" "}
         <span className={styles.text_bold}>VER RESPOSTA</span>. Que deslocará o
-        documento para região mais próxima ao texto de resposta. Além disso,
-        cada pergunta também apresenta a opção de votação para saber se a
-        pergunta é coerente. Caso a pergunta seja coerente, uma nova opção de
-        votação será exibida para que você avalie a resposta.
+        documento para região mais próxima ao texto de resposta. Nem todas as
+        respostas terão suas regiões corretamente marcada, por isso,{" "}
+        <span className={styles.text_bold}>
+          análise a região sinalizada com cuidado
+        </span>
+        . Quando não houver uma região sinalizada,{" "}
+        <span className={styles.text_bold}>
+          leia o documento com atenção em busca da resposta
+        </span>
+        . Além disso, cada pergunta também apresenta a opção de votação para
+        saber se a pergunta é coerente. Caso a pergunta seja coerente, uma nova
+        opção de votação será exibida para que você avalie a resposta.
       </Typography>
       <Image
         src="/question_eval.png"
