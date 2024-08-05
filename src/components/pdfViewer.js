@@ -79,7 +79,7 @@ export default function PdfViewer({
 
   useEffect(() => {
     getDocumentPage();
-  }, []);
+  }, [fileId]);
 
   function boxContainer() {
     return (
