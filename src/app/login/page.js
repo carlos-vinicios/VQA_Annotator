@@ -26,7 +26,6 @@ export default function Login() {
 
   useEffect(() => {
     const authData = decodeAuthData("systems");
-    console.log(authData);
     if (authData) {
       router.push("/resume");
     }

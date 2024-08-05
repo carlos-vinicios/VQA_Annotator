@@ -5,23 +5,25 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Document, Page } from "react-pdf";
 import { Box } from "@mui/material";
 import { MapInteractionCSS } from "react-map-interaction";
+import documentService from "@/services/api/documentService";
 
 export default function PdfViewer({
-  filePath,
+  fileId,
   pageNumber,
   pageWidth,
   QAS,
   matchers,
-  mobilePositionControl
+  mobilePositionControl,
 }) {
   const { mobileMatches, tabletMatches, computerMatches } = matchers;
   const [boxesElements, setBoxesElements] = useState([]);
+  const [docPage, setDocPage] = useState(null);
   const BoxRef = useRef(null);
-  const {documentPosition, setDocumentPosition } = mobilePositionControl;
+  const { documentPosition, setDocumentPosition } = mobilePositionControl;
 
   function pdfViewSize() {
     if (mobileMatches && !tabletMatches && !computerMatches) return 350;
@@ -68,10 +70,22 @@ export default function PdfViewer({
     createQABoxes(boxes, props);
   }
 
+  function getDocumentPage() {
+    documentService.getDocumentPage(fileId).then((response) => {
+      setDocPage(response);
+    });
+    // return `${process.env.NEXT_PUBLIC_API_HOST}/document/${fileId}`;
+  }
+
+  useEffect(() => {
+    getDocumentPage();
+  }, []);
+
   function boxContainer() {
     return (
       <Box ref={BoxRef}>
-        <Document file={filePath} header={{"ngrok-skip-browser-warning": "69420"}}>
+        {/* <Document file={filePath} options={{httpHeaders: {"ngrok-skip-browser-warning": "69420"}}}> */}
+        <Document file={docPage}>
           <Page
             width={pageWidth}
             pageNumber={pageNumber}
@@ -100,5 +114,11 @@ export default function PdfViewer({
     return boxContainer();
   }
 
-  return <Box sx={{ maxWidth: pdfViewSize(), width: pageWidth, marginBottom: '50vh' }}>{pdfViewMode()}</Box>;
+  return (
+    <Box
+      sx={{ maxWidth: pdfViewSize(), width: pageWidth, marginBottom: "50vh" }}
+    >
+      {pdfViewMode()}
+    </Box>
+  );
 }

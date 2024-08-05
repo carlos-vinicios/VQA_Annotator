@@ -349,7 +349,7 @@ export default function DocumentView() {
                 {reportFile !== undefined &&
                   Object.keys(reportFile).length > 0 && (
                     <PdfViewer
-                      filePath={`${process.env.NEXT_PUBLIC_API_HOST}/document/${reportFile.file_id}`}
+                      fileId={reportFile.file_id}
                       pageNumber={reportFile.page}
                       pageWidth={reportFile.page_size.width}
                       QAS={QAS}
