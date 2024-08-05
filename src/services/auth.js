@@ -3,7 +3,8 @@ import { destroyCookie } from "nookies";
 import { setCookie } from "nookies";
 
 const signOut = () => {
-  destroyCookie(undefined, "systems");
+  // destroyCookie(undefined, "systems");
+  setCookie(undefined, "systems", null);
 };
 
 const setAuthDataCookie = ({ email, stage, access_token, refresh_token }) => {
