@@ -94,7 +94,7 @@ export default function RegistrationForm() {
         Formulário de Cadastro
       </Typography>
       <Typography>
-        A pesquisa segue um alto padrão acadêmico e é conduzida anonimamente.
+        A pesquisa segue o rigor científico acadêmico e é conduzida anonimamente.
         Não associaremos seu nome e nem seu endereço de e-mail às suas
         respostas. Os dados coletados serão utilizados apenas para
         caracterização dos participantes.
