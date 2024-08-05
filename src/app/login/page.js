@@ -26,6 +26,7 @@ export default function Login() {
 
   useEffect(() => {
     const authData = decodeAuthData("systems");
+    console.log(authData);
     if (authData) {
       router.push("/resume");
     }
@@ -37,7 +38,7 @@ export default function Login() {
       .login(loginData)
       .then((authData) => {
         setAuthDataCookie(authData);
-        router.push("/evaluation");
+        router.push("/resume");
       })
       .catch((err) => {
         console.log("Erro no login:", err);
@@ -69,9 +70,10 @@ export default function Login() {
                 </Grid>
                 <Grid item xs={12} sm={12} lg={12}>
                   <FormControl fullWidth>
-                    <InputLabel>Username</InputLabel>
+                    <InputLabel>Email</InputLabel>
                     <Input
                       value={username}
+                      type="email"
                       onChange={(e) => setUsername(e.target.value)}
                     />
                   </FormControl>

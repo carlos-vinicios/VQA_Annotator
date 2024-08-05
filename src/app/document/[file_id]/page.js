@@ -148,12 +148,15 @@ export default function DocumentView() {
       votes.push({ ...QAS[i].vote, model: "human" });
     }
 
-    if (params.file_id !== undefined && params.file_id.includes("ed_"))
-      //interrompe a execução do código em caso de edição
-      return
-    
     evaluationService.saveEvaluations(reportFile.file_id, votes).then(() => {
-      getNewPageForEvaluation();
+      if (params.file_id !== undefined && params.file_id.includes("ed_")) {
+        //interrompe a execução do código em caso de edição
+        alert("Atualização realizada com sucesso.");
+        router.push("/resume");
+        return;
+      } else {
+        getNewPageForEvaluation();
+      }
     });
   };
 
@@ -281,9 +284,7 @@ export default function DocumentView() {
             aria-controls={`question-answer-${index}`}
             id={`question-answer-${index}`}
           >
-            <Typography>
-              Pergunta e Resposta {index + 1}
-            </Typography>
+            <Typography>Pergunta e Resposta {index + 1}</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Typography>Pergunta: {element.question}</Typography>
