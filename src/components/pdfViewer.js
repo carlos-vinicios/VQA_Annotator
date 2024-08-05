@@ -71,7 +71,7 @@ export default function PdfViewer({
   function boxContainer() {
     return (
       <Box ref={BoxRef}>
-        <Document file={filePath}>
+        <Document file={filePath} header={{"ngrok-skip-browser-warning": "69420"}}>
           <Page
             width={pageWidth}
             pageNumber={pageNumber}
