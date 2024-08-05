@@ -202,12 +202,12 @@ export default function Manual() {
           <br />
           Reposta: T5
         </Typography>
-        <Typography sx={components_spaces}>
-          Preste bastante atenção nesses quesitos, pois eles são cruciais para a
-          seleção das melhores perguntas e respostas para treinamento de modelos
-          especialistas.
-        </Typography>
       </Box>
+      <Typography sx={components_spaces}>
+        Preste bastante atenção nesses quesitos, pois eles são cruciais para a
+        seleção das melhores perguntas e respostas para treinamento de modelos
+        especialistas.
+      </Typography>
       <Typography variant="h5" component="h5" sx={components_spaces}>
         Tela de Anotação e Validação
       </Typography>
