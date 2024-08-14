@@ -18,6 +18,7 @@ export default function PdfViewer({
   QAS,
   matchers,
   mobilePositionControl,
+  documentLoading
 }) {
   const { mobileMatches, tabletMatches, computerMatches } = matchers;
   const [boxesElements, setBoxesElements] = useState([]);
@@ -68,13 +69,13 @@ export default function PdfViewer({
       });
     });
     createQABoxes(boxes, props);
+    documentLoading(false);
   }
 
   function getDocumentPage() {
     documentService.getDocumentPage(fileId).then((response) => {
       setDocPage(response);
     });
-    // return `${process.env.NEXT_PUBLIC_API_HOST}/document/${fileId}`;
   }
 
   useEffect(() => {
@@ -84,7 +85,6 @@ export default function PdfViewer({
   function boxContainer() {
     return (
       <Box ref={BoxRef}>
-        {/* <Document file={filePath} options={{httpHeaders: {"ngrok-skip-browser-warning": "69420"}}}> */}
         <Document file={docPage}>
           <Page
             width={pageWidth}

@@ -56,6 +56,7 @@ export default function DocumentView() {
     messages: { title: "", body: "" },
   });
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isDocumentLoading, setIsDocumentLoading] = useState(true);
   const [finishAnnotation, setFinishAnnotation] = useState(false);
   const colorPallete = [
     "rgba(250, 92, 92, 0.3)",
@@ -319,7 +320,7 @@ export default function DocumentView() {
     <Box pl={3} pr={3} mt={3} mb={3}>
       <SideMenu matchers={{ mobileMatches, tabletMatches, computerMatches }} />
       <FinishModal open={finishAnnotation} closeCallback={closeFinishModal} />
-      <LoadBackdrop open={isDataLoading} message={"Carregando Dados"} />
+      <LoadBackdrop open={isDataLoading || isDocumentLoading} message={"Carregando Dados"} />
       <InteractionDialog
         open={dialogData.open}
         index={dialogData.qaIndex}
@@ -352,6 +353,7 @@ export default function DocumentView() {
                       fileId={reportFile.file_id}
                       pageNumber={reportFile.page}
                       pageWidth={reportFile.page_size.width}
+                      documentLoading={setIsDocumentLoading}
                       QAS={QAS}
                       matchers={{
                         mobileMatches,
