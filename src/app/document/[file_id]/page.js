@@ -112,10 +112,7 @@ export default function DocumentView() {
           data.questions.map((element, index) => {
             let newElementValue = {
               ...element,
-              vote: {
-                coherent: null,
-                correct: null,
-              },
+              vote: element.votes[0],
               color: colorPallete[index],
             };
             return newElementValue;
